@@ -1,5 +1,6 @@
 package com.github.yin.flags;
 
+import com.github.yin.flags.analysis.UsagePrinter;
 import com.github.yin.flags.annotations.ClassScanner;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
@@ -65,6 +66,10 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
             Throwables.propagate(ex);
         }
         return null;
+    }
+
+    public static void printUsage() {
+        new UsagePrinter().printUsage(flagMetadataIndex, System.out);
     }
 
     /**

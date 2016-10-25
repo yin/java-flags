@@ -11,11 +11,11 @@ public abstract class FlagID implements Comparable<FlagID> {
         return new AutoValue_FlagID(className, flagName);
     }
 
-    abstract String className();
+    public abstract String className();
 
-    abstract String flagName();
+    public abstract String flagName();
 
-    final String fqn() {
+    public final String fqn() {
         return className() + '.' + flagName();
     }
 
