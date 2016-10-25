@@ -7,11 +7,11 @@ import com.google.auto.value.AutoValue;
  */
 @AutoValue
 public abstract class Flag<T> {
-    static <T> Flag create(Flags.FlagID flagID, Class<T> type, Flags.ArgumentIndex index) {
+    static <T> Flag create(FlagID flagID, Class<T> type, Flags.ArgumentIndex index) {
         return new AutoValue_Flag(flagID, type, index);
     }
 
-    abstract Flags.FlagID flagID();
+    abstract FlagID flagID();
 
     abstract Class<T> type();
 

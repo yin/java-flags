@@ -1,10 +1,11 @@
 package com.github.yin.flags;
 
+import com.github.yin.flags.annotations.ClassScanner;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -15,9 +16,11 @@ import java.util.*;
  */
 public class Flags {
     private static ArgumentIndex arguments;
-    private static final FlagIndex flagIndex = new FlagIndex();
+    private static final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
+    private static final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
     private static final List<Error> errors = new ArrayList();
     private static boolean collectErrors = false;
+    private static ClassScanner classScanner = new ClassScanner();
 
     /**
      * Initializes flag values from command-line style arguments.
@@ -42,21 +45,26 @@ public class Flags {
      * readability reasons.
      *
 <pre>
-// @flag(desc="Specifies path to input file")
-private static final Flag<String></String> flag_inputPath = Flags.create(String.class, "inputPath")
+@FlagDesc("Specifies path to input file")
+private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.class, "inputPath");
 </pre>
      *
      * @param type of the provided flag value
-     * @param name of the flag. This is must match the name the field or name attribute in @Flag annotation.
+     * @param name of the flag. This is must match the name the field or name attribute in @FlagDesc annotation.
      * @param <T> is the same as flag value type
      * @return Flag accessor for flag value identified by <code>name</code>
      */
     public static <T> Flag<T> create(Class<T> type, String name) {
-        String callerClass = getCallerClassName();
-        FlagID id = FlagID.create(callerClass, name);
-        Flag<T> flag = Flag.create(id, type, arguments);
-        flagIndex.add(id, flag);
-        return flag;
+        try {
+            String callerClass = scanCallerClass();
+            FlagID id = FlagID.create(callerClass, name);
+            Flag<T> flag = Flag.create(id, type, arguments);
+            flagIndex.add(id, flag);
+            return flag;
+        } catch (ClassNotFoundException ex) {
+            Throwables.propagate(ex);
+        }
+        return null;
     }
 
     /**
@@ -84,16 +92,10 @@ private static final Flag<String></String> flag_inputPath = Flags.create(String.
         return ImmutableList.copyOf(errors);
     }
 
-    private static String getCallerClassName() {
-        StackTraceElement[] stackTrace =  Thread.currentThread().getStackTrace();
-        String myType = Flags.class.getCanonicalName();
-        String threadType =  Thread.class.getCanonicalName();
-        for (StackTraceElement e : stackTrace) {
-            if (!e.getClassName().equals(myType) && !e.getClassName().equals(threadType)) {
-                return e.getClassName();
-            }
-        }
-        return null;
+    private static String scanCallerClass() throws ClassNotFoundException {
+        String className = getCallerClassName();
+        classScanner.scanClass(className, flagMetadataIndex);
+        return className;
     }
 
     private static ArgumentIndex indexArguments(String[] args) {
@@ -129,66 +131,16 @@ private static final Flag<String></String> flag_inputPath = Flags.create(String.
         }
     }
 
-    @AutoValue
-    public abstract static class FlagID implements Comparable<FlagID> {
-        static <T> FlagID create(String className, String flagName) {
-            return new AutoValue_Flags_FlagID(className, flagName);
+    private static String getCallerClassName() {
+        StackTraceElement[] stackTrace =  Thread.currentThread().getStackTrace();
+        String myType = Flags.class.getCanonicalName();
+        String threadType =  Thread.class.getCanonicalName();
+        for (StackTraceElement e : stackTrace) {
+            if (!e.getClassName().equals(myType) && !e.getClassName().equals(threadType)) {
+                return e.getClassName();
+            }
         }
-        abstract String className();
-        abstract String flagName();
-        final String fqn() {
-            return className() + '.' + flagName();
-        }
-        public int compareTo(FlagID that) {
-            return fqn().compareTo(that.fqn());
-        }
-    }
-
-    @AutoValue
-    public abstract static class FlagDesc {
-        static <T> FlagDesc create(String className, String flagName, String alt, String desc, Class<T> type) {
-            return new AutoValue_Flags_FlagDesc(className, flagName, alt, desc, type);
-        }
-        abstract String className();
-        abstract String flagName();
-        @Nullable abstract String alt();
-        @Nullable abstract String desc();
-        abstract Class<?> type();
-
-        final String fqn() {
-            return className() + '.' + flagName();
-        }
-    }
-
-    private static final class FlagIndex<T> {
-        private final Multimap<String, T> byName = HashMultimap.create();
-        private final Multimap<String, T> byClass = HashMultimap.create();
-        private final Map<String, T> byFQN = Maps.newTreeMap();
-        private ImmutableMultimap<String, T> _byName;
-        private ImmutableMultimap<String, T> _byType;
-        private ImmutableMap<String, T> _byFQN;
-
-        public void add(FlagID flagID, T flag) {
-            String clazz = flagID.className();
-            String name = flagID.flagName();
-            String fqn = flagID.fqn();
-            byName.put(name, flag);
-            byClass.put(clazz, flag);
-            byFQN.put(fqn, flag);
-            _byName = null;
-            _byType = null;
-            _byFQN = null;
-        }
-
-        public Multimap<String, T> byName() {
-            return _byName != null ? _byName : (_byName = ImmutableMultimap.copyOf(byName));
-        }
-        public ImmutableMultimap<String, T> byType() {
-            return _byType != null ? _byType : (_byType = ImmutableMultimap.copyOf(byClass));
-        }
-        public Map<String, T> byFQN() {
-            return _byFQN != null ? _byFQN : (_byFQN = ImmutableMap.copyOf(byFQN));
-        }
+        return null;
     }
 
     static class ArgsAcceptor {
@@ -257,7 +209,6 @@ private static final Flag<String></String> flag_inputPath = Flags.create(String.
      * Stores messsage and parameters of an error emitted by <code>Flags</code>.
      * @author Matej 'Yin' Gagyi
      */
-
     @AutoValue
     public abstract static class Error {
         public static Error create(String message, Object[] parameters) {

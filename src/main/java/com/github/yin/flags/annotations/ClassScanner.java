@@ -1,55 +1,70 @@
 package com.github.yin.flags.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.github.yin.flags.ClassMetadata;
+import com.github.yin.flags.FlagIndex;
+import com.github.yin.flags.FlagMetadata;
+import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Created by yin on 21.10.16.
+ * @author Matej 'Yin' Gagyi
  */
-/*
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Flag {
-    String name();
-    String alt();
-    String desc();
-}
-*/
-/*
-public class Flags {
-    private static final FlagIndex index = new FlagIndex();
+public class ClassScanner {
+    private static final Logger log  = LoggerFactory.getLogger(ClassScanner.class);
 
-    public static <T> Flag<T> create(Class<T> valueType) {
-
+    // TODO yin: it would be also useful to return the metadata in a list
+    public void scanClass(final String className, final FlagIndex<FlagMetadata> index) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(className);
+        ClassMetadata classInfo = collectClassMetadata(clazz);
+        collectFlagInfo(clazz, index);
     }
 
-    public static void registerClassWithAnnotations(Class<?> type) {
-        Field[] fields = type.getDeclaredFields();
+    private ClassMetadata collectClassMetadata(Class<?> clazz) {
+        return ClassMetadata.create(clazz.getName(), null);
+    }
+
+    public void collectFlagInfo(final Class<?> clazz, final FlagIndex<FlagMetadata> index) {
+        Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
-            Flag[] flags = field.getAnnotationsByType(Flag.class);
-            if (flags.length > 0) {
-                if ((field.getModifiers() & Modifier.STATIC) == 0) {
-                    emitError("Field must be static to be used with a @Flag", type, field);
-                    continue;
-                }
-                if ((field.getModifiers() & Modifier.FINAL) != 0) {
-                    emitError("Field can not be final to be used with a @Flag", type, field);
-                    continue;
-                }
-                if ((field.isAccessible()) {
-                    emitError("Field muist be publicly accessible to be used with a @Flag", type, field);
-                    continue;
-                }
+            FlagDesc[] flags = field.getAnnotationsByType(FlagDesc.class);
+            if (flags.length > 1) {
+                log.error("Multiple @FlagDesc occurrences on field: {}", field.toString());
             }
-            for (Flag flag : flags) {
-                index.addFlag(type, field, flag);
+            if ((field.getModifiers() & Modifier.STATIC) == 0) {
+                log.error("@FlagDesc on non-static field: {}", field.toString());
+                continue;
+            }
+            if ((field.getModifiers() & Modifier.FINAL) != 0) {
+                log.error("@FlagDesc on non-final field: {}", field);
+                continue;
+            }
+            if (field.isAccessible()) {
+                log.error("@FlagDesc on non-accessible filed: {}", field);
+                continue;
+            }
+            for (FlagDesc flag : flags) {
+                String name = flag.name() != null ? flag.name() : field.getName();
+                FlagMetadata meta =
+                        FlagMetadata.create(clazz.getCanonicalName(), name, flag.alt(), flag.desc(), field.getType());
+                index.add(meta.flagID(), meta);
             }
         }
     }
+
+    /*
+public class Flags {
+    private static final FlagIndex index = new FlagIndex();
+
+    public static <T> FlagMetadata<T> create(Class<T> valueType) {
+
+    }
+
 
     private static void setFlagValues(ImmutableMultimap<String, String> arguments) {
         ImmutableMap<String, Collection<String>> valueCollections = arguments.asMap();
@@ -68,7 +83,7 @@ public class Flags {
     }
 
     public static void printUsage(PrintStream out) {
-        ImmutableMultimap<String, FlagLink> links = flagIndex.byType();
+        ImmutableMultimap<String, FlagLink> links = flagIndex.byClass();
         for (String className: links.keySet()) {
             Set<FlagLink> classFlags = Sets.newTreeSet(links.get(className));
             out.println(className + ':');
@@ -86,12 +101,12 @@ public class Flags {
 
 /*
     public abstract static class AnnotationFlagLink implements FlagLink, Comparable<FlagLink> {
-        static FlagLink create(Class<?> type, Field field, Flag flag) {
+        static FlagLink create(Class<?> type, Field field, FlagMetadata flag) {
             return new AutoValue_Flags_AnnotationFlagLink(type, field, flag);
         }
         public abstract Class<?> type();
         public abstract Field field();
-        public abstract Flag flag();
+        public abstract FlagMetadata flag();
 
         private String flagName() {
             return annotation().name() != null ? annotation().name() : field().getName();
@@ -110,12 +125,12 @@ public class Flags {
 
 
 /*
-    public static class Flag<T> {
+    public static class FlagMetadata<T> {
         private String className;
         private String flagName;
         private ArgumentIndex index;
 
-        private Flag(String className, String flagName, ArgumentIndex index) {
+        private FlagMetadata(String className, String flagName, ArgumentIndex index) {
             this.className = className;
             this.flagName = flagName;
             this.index = index;
@@ -131,20 +146,20 @@ public class Flags {
     }
 
     public interface FlagLink extends Comparable<FlagLink> {
-        FlagDesc flagDesc();
+        FlagMetadata flagDesc();
         int compareTo(FlagLink that);
     }
 
     static class GetterFlagLink implements FlagLink {
-        private final Flag flag;
-        private final FlagDesc flagDesc;
+        private final FlagMetadata flag;
+        private final FlagMetadata flagDesc;
 
-        public GetterFlagLink(Flag flag, FlagDesc flagDesc) {
+        public GetterFlagLink(FlagMetadata flag, FlagMetadata flagDesc) {
             this.flag = flag;
             this.flagDesc = flagDesc;
         }
 
-        public FlagDesc flagDesc() {
+        public FlagMetadata flagDesc() {
             return flagDesc;
         }
 
@@ -171,7 +186,7 @@ public class Flags {
         private ImmutableMap<String, FlagLink> _byFQN;
 
         public void addFlag(FlagLink link) {
-            FlagDesc flagDesc = link.flagDesc();
+            FlagMetadata flagDesc = link.flagDesc();
             String clazz = flagDesc.className();
             String name = flagDesc.flagName();
             String alt = flagDesc.alt();
@@ -190,7 +205,7 @@ public class Flags {
         public Multimap<String, FlagLink> byName() {
             return _byName != null ? _byName : (_byName = ImmutableMultimap.copyOf(byName));
         }
-        public ImmutableMultimap<String, FlagLink> byType() {
+        public ImmutableMultimap<String, FlagLink> byClass() {
             return _byType != null ? _byType : (_byType = ImmutableMultimap.copyOf(byClass));
         }
         public Map<String, FlagLink> byFQN() {
@@ -199,3 +214,4 @@ public class Flags {
     }
 
  */
+}
