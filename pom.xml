@@ -6,7 +6,7 @@
 
     <groupId>com.github.yin.flags</groupId>
     <artifactId>java-flags</artifactId>
-    <version>0.1</version>
+    <version>0.1.1-SNAPSHOT</version>
 
     <name>java-flags</name>
     <description>Easy to use command-line parser, which enables you to
