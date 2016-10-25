@@ -2,6 +2,8 @@ package com.github.yin.flags;
 
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nonnull;
+
 /**
  * @author Matej 'Yin' Gagyi
  */
@@ -19,7 +21,7 @@ public abstract class FlagID implements Comparable<FlagID> {
         return className() + '.' + flagName();
     }
 
-    public int compareTo(FlagID that) {
+    public int compareTo(@Nonnull FlagID that) {
         return fqn().compareTo(that.fqn());
     }
 }

@@ -5,11 +5,14 @@ import com.github.yin.flags.annotations.ClassScanner;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.Nonnull;
 import java.util.*;
 
 /**
@@ -20,23 +23,20 @@ import java.util.*;
  *
  * @author matej.gagyi@gmail.com
  */
-public class Flags {
+public class Flags implements ArgumentProvider {
     private static Flags instance;
-    private static ArgumentIndex arguments;
-    private static final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
-    private static final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
-    private static final ClassMetadataIndex classMetadataIndex = new ClassMetadataIndex();
-    private static final List<Error> errors = new ArrayList();
-    private static boolean collectErrors = false;
-    private static ClassScanner classScanner = new ClassScanner();
+    private final ClassScanner classScanner = new ClassScanner();
+    private final ClassMetadataIndex classMetadataIndex = new ClassMetadataIndex();
+    private final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
+    private final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
+    private ArgumentIndex argumentIndex = ArgumentIndex.EMPTY;
 
     /**
      * Initializes flag values from command-line style arguments.
      * @param args command-line arguments to parse values from
      */
-    public static boolean init(String[] args) {
-        arguments = instance().indexArguments(args);
-        return arguments != null;
+    public static void init(String[] args) {
+        instance().indexArguments(args);
     }
 
     /**
@@ -52,10 +52,10 @@ public class Flags {
      * Preferably the typespecific variants (<code>string()</code>, ...) should be used for
      * readability reasons.
      *
-<pre>
-@FlagDesc("Specifies path to input file")
-private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.class, "inputPath");
-</pre>
+     * <pre>{@code
+     * &at;FlagDesc("Specifies path to input file")
+     * private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.class, "inputPath");
+     * }</pre>
      *
      * @param type of the provided flag value
      * @param name of the flag. This is must match the name the field or name attribute in @FlagDesc annotation.
@@ -70,7 +70,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         try {
             String callerClass = scanCallerClass();
             FlagID id = FlagID.create(callerClass, name);
-            Flag<T> flag = Flag.create(id, type, arguments);
+            Flag<T> flag = Flag.create(id, type, this);
             flagIndex.add(id, flag);
             return flag;
         } catch (ClassNotFoundException ex) {
@@ -79,8 +79,27 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return null;
     }
 
-    public static void printUsage(String packageProfix) {
-        instance().printUsageForPackage(packageProfix);
+    public static void printUsage(String packagePrefix) {
+        instance().printUsageForPackage(packagePrefix);
+    }
+
+    /**
+     * Indexes flag values from a <code>Map</code>. This is useful for mocking flag values in
+     * integration testing. Please do not misuse this function, there will be better way to inject
+     * your logic into flag processing, surely use this only in your tests.
+     * @param options Map of flags and their intended values
+     */
+    @VisibleForTesting
+    public static void initForTesting(Map<String, String> options) {
+        instance().indexMap(options);
+    }
+
+    public static void clear() {
+        instance().clearArguments();
+    }
+
+    public ArgumentIndex arguments() {
+        return argumentIndex;
     }
 
     private void printUsageForPackage(String packageProfix) {
@@ -88,17 +107,6 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
             classScanner.scanPackage(packageProfix, flagMetadataIndex, classMetadataIndex);
         }
         new UsagePrinter().printUsage(flagMetadataIndex, classMetadataIndex, System.out);
-    }
-
-    /**
-     * Indexes flag values from a <code>Map</code>. This is useful for mocking flag values in
-     * integration testing. Please do not missuse this function, there will be better way to inject
-     * your logic into flag processing, surely use this only in your tests.
-     * @param options Map of flags and their intended values
-     */
-    @VisibleForTesting
-    public static void initForTesting(Map<String, String> options) {
-        instance().indexMap(options);
     }
 
     private String scanCallerClass() throws ClassNotFoundException {
@@ -118,7 +126,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return instance;
     }
 
-    private ArgumentIndex indexArguments(String[] args) {
+    private void indexArguments(String[] args) {
         Iterator<String> iterator = Iterators.forArray(args);
         ArgsAcceptor acceptor = new ArgsAcceptor();
         acceptor.startArgs();
@@ -131,10 +139,10 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
             }
         }
         acceptor.endArgs();
-        return acceptor.buildIndex();
+        argumentIndex = acceptor.buildIndex();
     }
 
-    private ArgumentIndex indexMap(Map<String, String> options) {
+    private void indexMap(Map<String, String> options) {
         ArgsAcceptor acceptor = new ArgsAcceptor();
         acceptor.startArgs();
         for (Map.Entry<String, String> option : options.entrySet()) {
@@ -142,7 +150,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
             acceptor.acceptValue(option.getValue());
         }
         acceptor.endArgs();
-        return acceptor.buildIndex();
+        argumentIndex = acceptor.buildIndex();
     }
 
     private String getCallerClassName() {
@@ -157,6 +165,10 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return null;
     }
 
+    private void clearArguments() {
+        argumentIndex = ArgumentIndex.EMPTY;
+    }
+
     //TODO yin: Change into ArgumentIndexBuilder and make it look nice
     static class ArgsAcceptor {
         private static final Logger log = LoggerFactory.getLogger(ArgsAcceptor.class);
@@ -164,7 +176,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         private AcceptorState state;
         private String _key;
 
-        enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED; }
+        enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
 
         void startArgs() {
             state = AcceptorState.KEY_EXPECTED;
@@ -200,6 +212,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
     }
 
     static class ArgumentIndex  {
+        public static final ArgumentIndex EMPTY = new ArgumentIndex(ImmutableMultimap.<String, String>of());
         private final ImmutableMultimap<String, String> argumentValues;
 
         public ArgumentIndex(ImmutableMultimap<String, String> argumentValues) {
@@ -227,7 +240,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
     }
 
     /**
-     * Stores messsage and parameters of an error emitted by <code>Flags</code>.
+     * Stores message and parameters of an error emitted by <code>Flags</code>.
      * @author Matej 'Yin' Gagyi
      */
     @AutoValue

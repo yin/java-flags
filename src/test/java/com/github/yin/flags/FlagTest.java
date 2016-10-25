@@ -19,27 +19,27 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class FlagTest {
     private static final Class<?> UNSUPPORTED_TYPE = Integer.class;
-
-    @Mock
-    Flags.ArgumentIndex mockIndex;
+    @Mock ArgumentProvider mockArgumentProvider;
+    @Mock Flags.ArgumentIndex mockArgumentIndex;
 
     @Before
     public void setUp() {
-        doReturn("test.log").when(mockIndex).single(anyString(), eq("input"));
+        doReturn(mockArgumentIndex).when(mockArgumentProvider).arguments();
+        doReturn("test.log").when(mockArgumentIndex).single(anyString(), eq("input"));
     }
 
     @Test
     public void get_String() throws Exception {
         assertEquals("should return arguments as String",
-                "test.log", Flag.create(FlagID.create("FakeClass", "input"), String.class, mockIndex).get());
+                "test.log", Flag.create(FlagID.create("FakeClass", "input"), String.class, mockArgumentProvider).get());
         // Do we need to test this interaction?
-        verify(mockIndex).single("FakeClass", "input");
+        verify(mockArgumentIndex).single("FakeClass", "input");
     }
 
     @Test
     public void get_unsupported() throws Exception {
         try {
-            Flag.create(FlagID.create("FakeClass", "input"), UNSUPPORTED_TYPE, mockIndex).get();
+            Flag.create(FlagID.create("FakeClass", "input"), UNSUPPORTED_TYPE, mockArgumentProvider).get();
             fail("should throw UOE when type conversion for target type is missing");
         } catch(UnsupportedOperationException ex) {
             // pass

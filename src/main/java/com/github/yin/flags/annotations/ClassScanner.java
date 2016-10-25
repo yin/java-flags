@@ -70,12 +70,11 @@ public class ClassScanner {
         }
     }
 
-    public void scanPackage(String packageProfix, FlagIndex<FlagMetadata> index, ClassMetadataIndex classMetaIndex) {
-        Reflections reflections = new Reflections(packageProfix);
+    public void scanPackage(String packagePrefix, FlagIndex<FlagMetadata> index, ClassMetadataIndex classMetaIndex) {
+        Reflections reflections = new Reflections(packagePrefix);
         Set<Class<?>> classDescs = reflections.getTypesAnnotatedWith(FlagDesc.class);
         for (Class<?> clazz : classDescs) {
             scanClass(clazz, index, classMetaIndex);
         }
-
     }
 }

@@ -18,7 +18,7 @@ git tag "v$1" -m "Release $1"
 git push "v$1"
 
 echo -e "<dependency>"
-echo -e "\t<groupdId>com.github.yin.flags</groupId>"
+echo -e "\t<groupId>com.github.yin.flags</groupId>"
 echo -e "\t<artifactId>java-flags</artifactId>"
 echo -e "\t<version>$1-SNAPSHOT</version>"
 echo -e "</dependency>"

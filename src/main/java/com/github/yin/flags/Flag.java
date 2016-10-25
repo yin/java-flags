@@ -11,7 +11,7 @@ import com.google.auto.value.AutoValue;
  */
 @AutoValue
 public abstract class Flag<T> {
-    static <T> Flag create(FlagID flagID, Class<T> type, Flags.ArgumentIndex index) {
+    static <T> Flag create(FlagID flagID, Class<T> type, ArgumentProvider index) {
         return new AutoValue_Flag(flagID, type, index);
     }
 
@@ -19,15 +19,17 @@ public abstract class Flag<T> {
 
     abstract Class<T> type();
 
-    abstract Flags.ArgumentIndex index();
+    abstract ArgumentProvider flags();
 
     public T get() {
         if (type().isAssignableFrom(String.class)) {
-            String value = index().single(flagID().className(), flagID().flagName());
+            String value = flags().arguments().single(flagID().className(), flagID().flagName());
             return (T) value;
         } else {
             throw new UnsupportedOperationException(
-                    String.format("Type conversion for Flag<{}>s is not implemented, Flag: {}", type(), flagID()));
+                    String.format("Type conversion for Flag<%s>s is not implemented, Flag: %s",
+                            type().getCanonicalName(), flagID().toString()));
         }
     }
+
 }
