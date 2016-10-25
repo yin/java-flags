@@ -11,7 +11,7 @@ import java.util.Map;
  *
  * @author Matej 'Yin' Gagyi
  */
-public class ClassInfoIndex {
+public class ClassMetadataIndex {
     private final Map<String, ClassMetadata> classes = Maps.newTreeMap();
     // TODO yin: Don't allow direct access to the MAP
     public Map<String, ClassMetadata> classes() {

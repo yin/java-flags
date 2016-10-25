@@ -19,6 +19,7 @@ public class Flags {
     private static ArgumentIndex arguments;
     private static final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
     private static final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
+    private static final ClassMetadataIndex classMetadataIndex = new ClassMetadataIndex();
     private static final List<Error> errors = new ArrayList();
     private static boolean collectErrors = false;
     private static ClassScanner classScanner = new ClassScanner();
@@ -68,8 +69,9 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return null;
     }
 
-    public static void printUsage() {
-        new UsagePrinter().printUsage(flagMetadataIndex, System.out);
+    public static void printUsage(String packageProfix) {
+        classScanner.scanPackage(packageProfix, flagMetadataIndex, classMetadataIndex);
+        new UsagePrinter().printUsage(flagMetadataIndex, classMetadataIndex, System.out);
     }
 
     /**
@@ -99,7 +101,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
 
     private static String scanCallerClass() throws ClassNotFoundException {
         String className = getCallerClassName();
-        classScanner.scanClass(className, flagMetadataIndex);
+        classScanner.scanClass(className, flagMetadataIndex, classMetadataIndex);
         return className;
     }
 

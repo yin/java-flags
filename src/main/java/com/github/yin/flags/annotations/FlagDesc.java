@@ -11,9 +11,9 @@ import java.lang.reflect.Modifier;
  * Created by yin on 21.10.16.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ ElementType.FIELD, ElementType.TYPE})
 public @interface FlagDesc {
-    String name();
-    String alt();
-    String desc();
+    String name() default "";
+    String alt() default "";
+    String value();
 }

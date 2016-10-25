@@ -36,10 +36,16 @@
 
     <dependencies>
         <dependency>
-            <!-- generates value classes -->
+            <!-- provides logging -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <!-- provides class path scanning -->
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.10</version>
         </dependency>
         <dependency>
             <!-- generates value classes -->
