@@ -6,16 +6,22 @@ import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
 
 /**
  * Parses program arguments in a specified format and initializes registered static class fields in different
- * application components. Classes must be registered prior to calling Flags.init().
+ * application components. Flags provides static API to the client application and client should not attempt to
+ * manipulate own instances of Flags. One exception might be testing. Here, we provide method
+ * {@link Flags#initForTesting(Map)}).
  *
  * @author matej.gagyi@gmail.com
  */
 public class Flags {
+    private static Flags instance;
     private static ArgumentIndex arguments;
     private static final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
     private static final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
@@ -29,7 +35,7 @@ public class Flags {
      * @param args command-line arguments to parse values from
      */
     public static boolean init(String[] args) {
-        arguments = indexArguments(args);
+        arguments = instance().indexArguments(args);
         return arguments != null;
     }
 
@@ -57,6 +63,10 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
      * @return Flag accessor for flag value identified by <code>name</code>
      */
     public static <T> Flag<T> create(Class<T> type, String name) {
+        return instance().createFlag(type, name);
+    }
+
+    private <T> Flag<T> createFlag(Class<T> type, String name) {
         try {
             String callerClass = scanCallerClass();
             FlagID id = FlagID.create(callerClass, name);
@@ -70,7 +80,13 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
     }
 
     public static void printUsage(String packageProfix) {
-        classScanner.scanPackage(packageProfix, flagMetadataIndex, classMetadataIndex);
+        instance().printUsageForPackage(packageProfix);
+    }
+
+    private void printUsageForPackage(String packageProfix) {
+        synchronized (this) {
+            classScanner.scanPackage(packageProfix, flagMetadataIndex, classMetadataIndex);
+        }
         new UsagePrinter().printUsage(flagMetadataIndex, classMetadataIndex, System.out);
     }
 
@@ -82,30 +98,27 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
      */
     @VisibleForTesting
     public static void initForTesting(Map<String, String> options) {
-        indexMap(options);
+        instance().indexMap(options);
     }
 
-    /**
-     * Enables or disables error collection.
-     */
-    public static void enableErrorCollection(boolean collectErrors) {
-        Flags.collectErrors = collectErrors;
-    }
-
-    /**
-     * @returns Errors collected during flag indexing and access
-     */
-    public static ImmutableList<Error> getErrors() {
-        return ImmutableList.copyOf(errors);
-    }
-
-    private static String scanCallerClass() throws ClassNotFoundException {
+    private String scanCallerClass() throws ClassNotFoundException {
         String className = getCallerClassName();
-        classScanner.scanClass(className, flagMetadataIndex, classMetadataIndex);
+        synchronized (this) {
+            classScanner.scanClass(className, flagMetadataIndex, classMetadataIndex);
+        }
         return className;
     }
 
-    private static ArgumentIndex indexArguments(String[] args) {
+    private static Flags instance() {
+        synchronized (Flags.class) {
+            if (instance == null) {
+                instance = new Flags();
+            }
+        }
+        return instance;
+    }
+
+    private ArgumentIndex indexArguments(String[] args) {
         Iterator<String> iterator = Iterators.forArray(args);
         ArgsAcceptor acceptor = new ArgsAcceptor();
         acceptor.startArgs();
@@ -121,7 +134,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return acceptor.buildIndex();
     }
 
-    private static ArgumentIndex indexMap(Map<String, String> options) {
+    private ArgumentIndex indexMap(Map<String, String> options) {
         ArgsAcceptor acceptor = new ArgsAcceptor();
         acceptor.startArgs();
         for (Map.Entry<String, String> option : options.entrySet()) {
@@ -132,13 +145,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return acceptor.buildIndex();
     }
 
-    static void emitError(String message, Object... args) {
-        if (collectErrors) {
-            errors.add(Error.create(message, args));
-        }
-    }
-
-    private static String getCallerClassName() {
+    private String getCallerClassName() {
         StackTraceElement[] stackTrace =  Thread.currentThread().getStackTrace();
         String myType = Flags.class.getCanonicalName();
         String threadType =  Thread.class.getCanonicalName();
@@ -150,36 +157,43 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
         return null;
     }
 
+    //TODO yin: Change into ArgumentIndexBuilder and make it look nice
     static class ArgsAcceptor {
+        private static final Logger log = LoggerFactory.getLogger(ArgsAcceptor.class);
+        private final Multimap<String, String> arguments = ArrayListMultimap.create();
         private AcceptorState state;
         private String _key;
-        private final Multimap<String, String> arguments = ArrayListMultimap.create();
 
         enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED; }
 
         void startArgs() {
             state = AcceptorState.KEY_EXPECTED;
         }
+
         void acceptKey(String key) {
             if (state != AcceptorState.KEY_EXPECTED) {
-                emitError("Each option is a key-value pair, option " + _key + " is followed directly by " + key);
+                log.error("Option {} has no value", _key);
             }
             this._key = key;
             state = AcceptorState.VALUE_EXPECTED;
         }
+
         void acceptValue(String value) {
+            //TODO yin: Add support for multi value options and positional arguments
             if (state == AcceptorState.VALUE_EXPECTED) {
                 arguments.put(this._key, value);
                 state = AcceptorState.KEY_EXPECTED;
             } else {
-                emitError("Each option is a key value pair, key has been omitted before argument '" + value + "'");
+                log.error("No option before argument '{}' (temporary rule)", value);
             }
         }
+
         void endArgs() {
             if (state != AcceptorState.KEY_EXPECTED) {
-                emitError("Each option is a key-value pair, option " + _key + " is the last arguments");
+                log.error("Option {} has no value", _key);
             }
         }
+
         ArgumentIndex buildIndex() {
             return new ArgumentIndex(ImmutableMultimap.copyOf(arguments));
         }
@@ -219,7 +233,7 @@ private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.cla
     @AutoValue
     public abstract static class Error {
         public static Error create(String message, Object[] parameters) {
-            return new AutoValue_Flags_Error(message, (Object) parameters);
+            return new AutoValue_Flags_Error(message, parameters);
         }
         public abstract String message();
         protected abstract Object varargs();

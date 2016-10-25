@@ -3,6 +3,10 @@ package com.github.yin.flags;
 import com.google.auto.value.AutoValue;
 
 /**
+ * Provides Flag value and type-conversion to program classes. To access the argument value,
+ * statically initialize a Flag by calling <code>Flags.create(type, name)</code>. Then use
+ * method {@link Flag#get()} to get the value.
+ *
  * @author Matej 'Yin' Gagyi
  */
 @AutoValue
@@ -22,8 +26,8 @@ public abstract class Flag<T> {
             String value = index().single(flagID().className(), flagID().flagName());
             return (T) value;
         } else {
-            Flags.emitError("Flags must be of type String for now", flagID());
+            throw new UnsupportedOperationException(
+                    String.format("Type conversion for Flag<{}>s is not implemented, Flag: {}", type(), flagID()));
         }
-        return null;
     }
 }
