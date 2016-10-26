@@ -10,7 +10,7 @@ import java.io.PrintStream;
 import java.util.Set;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 public class UsagePrinter {
     public void printUsage(FlagIndex<FlagMetadata> flagMetaIndex, ClassMetadataIndex classMetaIndex, PrintStream out) {

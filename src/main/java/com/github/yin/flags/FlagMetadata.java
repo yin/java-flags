@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 /**
  * Stores description and other flag attributes.
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 @AutoValue
 public abstract class FlagMetadata implements Comparable<FlagMetadata> {

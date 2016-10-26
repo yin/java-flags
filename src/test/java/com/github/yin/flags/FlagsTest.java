@@ -11,7 +11,7 @@ import java.io.PrintStream;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 public class FlagsTest {
     @BeforeClass

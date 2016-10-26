@@ -14,7 +14,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 @RunWith(MockitoJUnitRunner.class)
 public class FlagTest {

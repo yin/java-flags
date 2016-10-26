@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.TYPE})

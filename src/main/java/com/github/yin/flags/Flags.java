@@ -21,7 +21,28 @@ import java.util.*;
  * manipulate own instances of Flags. One exception might be testing. Here, we provide method
  * {@link Flags#initForTesting(Map)}).
  *
- * @author matej.gagyi@gmail.com
+ * Example:
+ * <pre>{@code
+ * @FlagDesc("Processes report in current directory.")
+ * public static class ReportMain {
+ *
+ *     @FlagDesc("if 'true', processes extended report")
+ *     static final Flag<String> foo = Flags.string("foo");
+ *
+ *     public static main(String[] args) {
+ *         Flags.init(args);
+ *         if (foo.get().equals("true")) {
+ *             // ...
+ *         } else if (foo.get().equals("false")) {
+ *             // ...
+ *         } else {
+ *             Flags.printUsage("com.example");
+ *         }
+ *     }
+ * }
+ * }</pre>
+ *
+ * @author yin
  */
 public class Flags implements ArgumentProvider {
     private static Flags instance;
@@ -241,7 +262,7 @@ public class Flags implements ArgumentProvider {
 
     /**
      * Stores message and parameters of an error emitted by <code>Flags</code>.
-     * @author Matej 'Yin' Gagyi
+     * @author yin
      */
     @AutoValue
     public abstract static class Error {

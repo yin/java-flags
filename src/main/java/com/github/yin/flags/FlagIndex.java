@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Stores value objects indexed by <code>FlagID</code> in a <code>Multimap</code> fashion
  * and allows for easy access by any FlagID attribute.
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 public final class FlagIndex<T> {
     private final Multimap<String, T> byName = HashMultimap.create();

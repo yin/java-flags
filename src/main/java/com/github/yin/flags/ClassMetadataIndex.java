@@ -9,7 +9,7 @@ import java.util.Map;
  * to the underlying {@link Map} for the time being. Accessing an internal collection directly is
  * generally considered dangerous, so this API is not stable yet.
  *
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 public class ClassMetadataIndex {
     private final Map<String, ClassMetadata> classes = Maps.newTreeMap();

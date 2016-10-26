@@ -1,7 +1,7 @@
 package com.github.yin.flags;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 interface ArgumentProvider {
     Flags.ArgumentIndex arguments();

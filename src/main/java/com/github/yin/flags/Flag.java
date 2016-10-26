@@ -7,7 +7,7 @@ import com.google.auto.value.AutoValue;
  * statically initialize a Flag by calling <code>Flags.create(type, name)</code>. Then use
  * method {@link Flag#get()} to get the value.
  *
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 @AutoValue
 public abstract class Flag<T> {

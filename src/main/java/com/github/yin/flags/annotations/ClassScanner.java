@@ -13,7 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 public class ClassScanner {
     private static final Logger log  = LoggerFactory.getLogger(ClassScanner.class);

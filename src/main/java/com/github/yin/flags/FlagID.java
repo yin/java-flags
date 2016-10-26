@@ -5,7 +5,7 @@ import com.google.auto.value.AutoValue;
 import javax.annotation.Nonnull;
 
 /**
- * @author Matej 'Yin' Gagyi
+ * @author yin
  */
 @AutoValue
 public abstract class FlagID implements Comparable<FlagID> {
