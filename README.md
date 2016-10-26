@@ -106,8 +106,6 @@ Make sure yo do:
 4. Check README.md for up-to-dateness (my favorite ness-ness)
 5. No failing or broken tests ar accepted in Pull Requests and may result in excessive trolling in the Code Review.
 
-## LICENSE
+## License
 
 MIT License, 2016 Matej 'Yin' Gagyi
-
--- enjoy, Matej
