@@ -240,16 +240,17 @@ public class Flags implements ArgumentProvider {
             this.argumentValues = argumentValues;
         }
 
-        public Collection<String> all(String className, String flagName) {
-            Collection<String> ret = argumentValues.get(className + '.' + flagName);
+
+        public Collection<String> all(FlagID flagID) {
+            Collection<String> ret = argumentValues.get(flagID.className() + '.' + flagID.flagName());
             if (ret == null || ret.isEmpty()) {
-                ret = argumentValues.get(flagName);
+                ret = argumentValues.get(flagID.flagName());
             }
             return ret;
         }
 
-        public String single(String className, String flagName) {
-            Collection<String> ret = this.all(className, flagName);
+        public String single(FlagID flagID) {
+            Collection<String> ret = this.all(flagID);
             if (ret != null) {
                 Iterator<String> iter = ret.iterator();
                 if (iter.hasNext()) {

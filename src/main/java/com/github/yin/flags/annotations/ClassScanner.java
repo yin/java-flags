@@ -64,7 +64,7 @@ public class ClassScanner {
             for (FlagDesc desc : flagDescs) {
                 String name = desc.name() != null && !desc.name().isEmpty() ? desc.name() : field.getName();
                 FlagMetadata meta =
-                        FlagMetadata.create(clazz.getCanonicalName(), name, desc.alt(), desc.value(), field.getType());
+                        FlagMetadata.create(clazz.getCanonicalName(), name, desc.value(), field.getType());
                 index.add(meta.flagID(), meta);
             }
         }

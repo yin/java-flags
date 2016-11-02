@@ -23,7 +23,7 @@ public abstract class Flag<T> {
 
     public T get() {
         if (type().isAssignableFrom(String.class)) {
-            String value = flags().arguments().single(flagID().className(), flagID().flagName());
+            String value = flags().arguments().single(flagID());
             return (T) value;
         } else {
             throw new UnsupportedOperationException(
@@ -31,5 +31,4 @@ public abstract class Flag<T> {
                             type().getCanonicalName(), flagID().toString()));
         }
     }
-
 }

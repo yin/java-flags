@@ -4,12 +4,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
@@ -25,15 +24,16 @@ public class FlagTest {
     @Before
     public void setUp() {
         doReturn(mockArgumentIndex).when(mockArgumentProvider).arguments();
-        doReturn("test.log").when(mockArgumentIndex).single(anyString(), eq("input"));
+        doReturn("test.log").when(mockArgumentIndex).single(Mockito.<FlagID>anyObject());
     }
 
     @Test
     public void get_String() throws Exception {
+        FlagID flagID = FlagID.create("FakeClass", "input");
         assertEquals("should return arguments as String",
-                "test.log", Flag.create(FlagID.create("FakeClass", "input"), String.class, mockArgumentProvider).get());
+                "test.log", Flag.create(flagID, String.class, mockArgumentProvider).get());
         // Do we need to test this interaction?
-        verify(mockArgumentIndex).single("FakeClass", "input");
+        verify(mockArgumentIndex).single(flagID);
     }
 
     @Test

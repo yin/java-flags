@@ -28,8 +28,6 @@ import java.lang.annotation.Target;
 public @interface FlagDesc {
     /** Name of flag */
     String name() default "";
-    /** Not used */
-    String alt() default "";
     /** Flag description */
     String value();
 }

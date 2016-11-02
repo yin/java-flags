@@ -11,11 +11,10 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class FlagMetadata implements Comparable<FlagMetadata> {
-    public static <T> FlagMetadata create(String className, String flagName, String alt, String desc, Class<T> type) {
-        return new AutoValue_FlagMetadata(FlagID.create(className, flagName), alt, desc, type);
+    public static <T> FlagMetadata create(String className, String flagName, String desc, Class<T> type) {
+        return new AutoValue_FlagMetadata(FlagID.create(className, flagName), desc, type);
     }
     public abstract FlagID flagID();
-    @Nullable public abstract String alt();
     @Nullable public abstract String desc();
     public abstract Class<?> type();
 
