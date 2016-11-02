@@ -12,7 +12,6 @@ import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 
 /**
@@ -26,8 +25,8 @@ import java.util.*;
  * @FlagDesc("Processes report in current directory.")
  * public static class ReportMain {
  *
- *     @FlagDesc("if 'true', processes extended report")
- *     static final Flag<String> foo = Flags.string("foo");
+ *     @FlagDesc("if 'true', prints additional information")
+ *     static final Flag<String> verbose = Flags.string("verbose");
  *
  *     public static main(String[] args) {
  *         Flags.init(args);
@@ -97,6 +96,7 @@ public class Flags implements ArgumentProvider {
         } catch (ClassNotFoundException ex) {
             Throwables.propagate(ex);
         }
+        //TODO yin: How is this statement reachable? We should throw here someException
         return null;
     }
 
@@ -150,27 +150,27 @@ public class Flags implements ArgumentProvider {
     private void indexArguments(String[] args) {
         Iterator<String> iterator = Iterators.forArray(args);
         ArgsAcceptor acceptor = new ArgsAcceptor();
-        acceptor.startArgs();
+        acceptor.start();
         while (iterator.hasNext()) {
             String arg = iterator.next();
             if (arg.startsWith("--")) {
-                acceptor.acceptKey(arg.substring(2));
+                acceptor.key(arg.substring(2));
             } else {
-                acceptor.acceptValue(arg);
+                acceptor.value(arg);
             }
         }
-        acceptor.endArgs();
+        acceptor.end();
         argumentIndex = acceptor.buildIndex();
     }
 
     private void indexMap(Map<String, String> options) {
         ArgsAcceptor acceptor = new ArgsAcceptor();
-        acceptor.startArgs();
+        acceptor.start();
         for (Map.Entry<String, String> option : options.entrySet()) {
-            acceptor.acceptKey(option.getKey());
-            acceptor.acceptValue(option.getValue());
+            acceptor.key(option.getKey());
+            acceptor.value(option.getValue());
         }
-        acceptor.endArgs();
+        acceptor.end();
         argumentIndex = acceptor.buildIndex();
     }
 
@@ -199,11 +199,11 @@ public class Flags implements ArgumentProvider {
 
         enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
 
-        void startArgs() {
+        void start() {
             state = AcceptorState.KEY_EXPECTED;
         }
 
-        void acceptKey(String key) {
+        void key(String key) {
             if (state != AcceptorState.KEY_EXPECTED) {
                 log.error("Option {} has no value", _key);
             }
@@ -211,7 +211,7 @@ public class Flags implements ArgumentProvider {
             state = AcceptorState.VALUE_EXPECTED;
         }
 
-        void acceptValue(String value) {
+        void value(String value) {
             //TODO yin: Add support for multi value options and positional arguments
             if (state == AcceptorState.VALUE_EXPECTED) {
                 arguments.put(this._key, value);
@@ -221,7 +221,7 @@ public class Flags implements ArgumentProvider {
             }
         }
 
-        void endArgs() {
+        void end() {
             if (state != AcceptorState.KEY_EXPECTED) {
                 log.error("Option {} has no value", _key);
             }
@@ -257,26 +257,6 @@ public class Flags implements ArgumentProvider {
                 }
             }
             return null;
-        }
-    }
-
-    /**
-     * Stores message and parameters of an error emitted by <code>Flags</code>.
-     * @author yin
-     */
-    @AutoValue
-    public abstract static class Error {
-        public static Error create(String message, Object[] parameters) {
-            return new AutoValue_Flags_Error(message, parameters);
-        }
-        public abstract String message();
-        protected abstract Object varargs();
-        // TODO yin: AutoValue allows only primitive arrays, Fix the error logging
-        public final Object[] parameters() {
-            return (Object[]) varargs();
-        }
-        public final String toString() {
-            return String.format(message(), parameters());
         }
     }
 }
