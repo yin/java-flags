@@ -9,8 +9,9 @@ import java.util.HashMap;
 import java.util.function.Function;
 
 /**
- *  Stores type conversion functions for {@link Flag<T>} accessors. Clients can register own type conversions
- *  and override the default conversions, including {@link String}.
+ *  Stores type conversion functions for {@link Flag<?>} accessors. Type conversion is a function taking
+ *  a argument String value and returns its representation in another type. Clients can register own
+ *  type conversions and override the default conversions, including {@link String}.
  */
 public class TypeConversion {
     private HashMap<Class<?>, Function<String, ?>> typeConversions = Maps.newHashMap();
@@ -70,7 +71,10 @@ public class TypeConversion {
         typeConversions.remove(type);
     }
 
-    /** Converts {@link String} value of a flag into the desired type. This is pre-Java8 requirement. */
+    /**
+     * Converts {@link String} value of a flag into the desired type. This is requirement for
+     * pre-Java 8 clients and @FunctionalInterface can not be used here.
+     */
     public interface Conversion<T> {
         T apply(String value);
     }
