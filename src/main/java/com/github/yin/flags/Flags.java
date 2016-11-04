@@ -49,6 +49,7 @@ public class Flags implements ArgumentProvider {
     private final FlagIndex<Flag<?>> flagIndex;
     private final FlagIndex<FlagMetadata> flagMetadataIndex;
     private ArgumentIndex argumentIndex = ArgumentIndex.EMPTY;
+
     private final TypeConversion typeConversion;
 
     /**
@@ -135,6 +136,11 @@ public class Flags implements ArgumentProvider {
     /** Returns an {@link ArgumentIndex} instance used to query for argument values. */
     public ArgumentIndex arguments() {
         return argumentIndex;
+    }
+
+    /** Type conversions used by Flags. */
+    public TypeConversion getTypeConversion() {
+        return typeConversion;
     }
 
     private void printUsageForPackage(String packageProfix) {
