@@ -1,5 +1,0 @@
-Maintainer
-==========
-
-- Matej Gagyi @yin
-

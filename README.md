@@ -33,9 +33,8 @@ public class ProgramRunner {
 }
 ````
 
-To access the flag value, use the accessor `get()` method. Type checking and type conversion is
-done for you automatically (but currently I support only `String`s, no type conversion, fu2).
-This is typically done in the constructor, or in a Guice Module `Provider`:
+To access the flag value, use the accessor `get()` method. This is typically done in the constructor, or
+in a Guice Module `Provider`:
 
 ````java
 class ProgramModule {
@@ -71,6 +70,30 @@ public class ProgramRunner {
 }
 ````
 
+### Type conversions
+
+String value of a flag is converted by `Flag.get()` into the target type `T` by calling a
+`TypeConversion.Conversion<T>` function. Default conversions for all primitive types,
+BigInteger and BigDecimal will work out of the box.
+
+If String value can not be parsed an exception is always thrown when calling `Flag.get()`.
+Clients can register their own type conversion:
+
+````java
+public class ProgramRunner {
+    public static main(String[] args) {
+        Flags.typeConversion().register(URL.class, new Conversion<BigDecimal>() {
+            @Override public URL apply(String s) {
+                return new URL(s);
+            }
+        });
+    }
+}
+````
+
+All conversion are global, but this will change in the future and conversion will be scoped only.
+
+NOTE: This mechanism is Java 6 compatible, so lambdas won't work here, at least for now.
 
 ### Installation
 
@@ -80,7 +103,7 @@ Just grab the package from Maven Central:
 <dependency>
     <groupdId>com.github.yin.flags</groupId>
     <artifactId>java-flags</artifactId>
-    <version>0.1.1</version>
+    <version>0.2</version>
 </dependency>
 ````
 
@@ -94,18 +117,6 @@ cd !$
 mvn install
 ````
 
-## Contributing
-
-Fork this GitHub repository (or ask me to make BitBucket mirror public) and prepare your changes into a Pull Request.
-
-Make sure yo do:
-
-1. Create tests all relevant changes and any fixed bugs!
-2. Run all tests to make sure they are not broken.
-3. Add your name and GitHub ID to CONTRIBUTORS before submitting your Pull Request.
-4. Check README.md for up-to-dateness (my favorite ness-ness)
-5. No failing or broken tests ar accepted in Pull Requests and may result in excessive trolling in the Code Review.
-
 ## License
 
-MIT License, 2016 Matej 'Yin' Gagyi
+MIT License, (C) 2016 Matej 'Yin' Gagyi
