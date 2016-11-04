@@ -2,17 +2,16 @@ package com.github.yin.flags;
 
 import com.github.yin.flags.analysis.UsagePrinter;
 import com.github.yin.flags.annotations.ClassScanner;
-import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Parses program arguments in a specified format and initializes registered static class fields in different
@@ -45,11 +44,12 @@ import java.util.*;
  */
 public class Flags implements ArgumentProvider {
     private static Flags instance;
-    private final ClassScanner classScanner = new ClassScanner();
-    private final ClassMetadataIndex classMetadataIndex = new ClassMetadataIndex();
-    private final FlagIndex<Flag<?>> flagIndex = new FlagIndex();
-    private final FlagIndex<FlagMetadata> flagMetadataIndex = new FlagIndex();
+    private final ClassScanner classScanner;
+    private final ClassMetadataIndex classMetadataIndex;
+    private final FlagIndex<Flag<?>> flagIndex;
+    private final FlagIndex<FlagMetadata> flagMetadataIndex;
     private ArgumentIndex argumentIndex = ArgumentIndex.EMPTY;
+    private final TypeConversion typeConversion;
 
     /**
      * Initializes flag values from command-line style arguments.
@@ -90,16 +90,18 @@ public class Flags implements ArgumentProvider {
         try {
             String callerClass = scanCallerClass();
             FlagID id = FlagID.create(callerClass, name);
-            Flag<T> flag = Flag.create(id, type, this);
+            Flag<T> flag = Flag.create(id, type, this, typeConversion);
             flagIndex.add(id, flag);
             return flag;
         } catch (ClassNotFoundException ex) {
             Throwables.propagate(ex);
         }
-        //TODO yin: How is this statement reachable? We should throw here someException
+        //Never reachable: Throwables.propagate() always throws, but IDE does not have this knowledge
         return null;
     }
 
+    /** Prints user-readable usage help for all flags in a given package */
+    // TODO yin: Subsequent calls will always print previously scanned packages, fix
     public static void printUsage(String packagePrefix) {
         instance().printUsageForPackage(packagePrefix);
     }
@@ -115,10 +117,12 @@ public class Flags implements ArgumentProvider {
         instance().indexMap(options);
     }
 
+    /** Clears the argument values. */
     public static void clear() {
         instance().clearArguments();
     }
 
+    /** Returns an {@link ArgumentIndex} instance used to query for argument values. */
     public ArgumentIndex arguments() {
         return argumentIndex;
     }
@@ -141,10 +145,20 @@ public class Flags implements ArgumentProvider {
     private static Flags instance() {
         synchronized (Flags.class) {
             if (instance == null) {
-                instance = new Flags();
+                instance = new Flags(new ClassScanner(), new ClassMetadataIndex(), new FlagIndex<Flag<?>>(),
+                        new FlagIndex<FlagMetadata>(), new TypeConversion());
             }
         }
         return instance;
+    }
+
+    private Flags(ClassScanner classScanner, ClassMetadataIndex classMetadataIndex, FlagIndex<Flag<?>> flagIndex, FlagIndex<FlagMetadata> flagMetadataIndex, TypeConversion typeConversion) {
+        this.classScanner = classScanner;
+        this.classMetadataIndex = classMetadataIndex;
+        this.flagIndex = flagIndex;
+        this.flagMetadataIndex = flagMetadataIndex;
+        this.argumentIndex = ArgumentIndex.EMPTY;
+        this.typeConversion = typeConversion;
     }
 
     private void indexArguments(String[] args) {
