@@ -36,7 +36,7 @@ public class ClassScanner {
             return;
         }
         for (FlagDesc desc : flagDescs) {
-            ClassMetadata classInfo =  ClassMetadata.create(clazz.getName(), desc.value());
+            ClassMetadata classInfo =  ClassMetadata.create(clazz.getCanonicalName(), desc.value());
             classMetadataIndex.classes().put(clazz.getCanonicalName(), classInfo);
         }
     }

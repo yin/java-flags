@@ -117,6 +117,16 @@ public class Flags implements ArgumentProvider {
         instance().indexMap(options);
     }
 
+    @VisibleForTesting
+    static ClassMetadataIndex classMetadata() {
+        return instance().classMetadataIndex;
+    }
+
+    @VisibleForTesting
+    static FlagIndex flagMetadata() {
+        return instance().flagMetadataIndex;
+    }
+
     /** Clears the argument values. */
     public static void clear() {
         instance().clearArguments();
