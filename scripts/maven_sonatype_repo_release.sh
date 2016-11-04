@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-if git branch | grep '* master' &> /dev/null; then
+if ! git branch | grep '* master' &> /dev/null; then
     echo "checkout master first"
     exit 1
 fi
