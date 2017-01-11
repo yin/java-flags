@@ -119,4 +119,4 @@ mvn install
 
 ## License
 
-MIT License, (C) 2016 Matej 'Yin' Gagyi
+MIT License, (C) 2016-2017 Matej 'Yin' Gagyi
