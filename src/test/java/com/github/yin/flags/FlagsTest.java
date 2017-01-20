@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -18,12 +19,7 @@ public class FlagsTest {
     @BeforeClass
     public static void setupClass() {
         //TODO yin: instantiate a flags instance for the future
-        Flags.init(new String[]{"--input", "filename.ext"});
-    }
-
-    @AfterClass
-    public static void teardownClass() {
-        Flags.clear();
+        Flags.parse(new String[]{"--input", "filename.ext"}, new ArrayList());
     }
 
     @Test
@@ -62,14 +58,14 @@ public class FlagsTest {
         assertEquals(Flag.class, flagMeta.type());
         assertEquals(classFQN, flagMeta.flagID().className());
         assertEquals("dummy", flagMeta.flagID().flagName());
-        assertEquals("A dummy field #flagDocumentation", flagMeta.desc());
+        assertEquals("A field #flagDocumentation", flagMeta.desc());
     }
 
     @FlagDesc("This is a dummy class for testing @FlagDesc annotation #classDocumentation")
     public static class TestFlagDesc {
         // Many tests might exercise Flags.create(), we don't want this static
         @SuppressWarnings("unused")
-        @FlagDesc("A dummy field #flagDocumentation")
+        @FlagDesc("A field #flagDocumentation")
         private static final Flag<String> dummy = Flags.string("dummy");
 
         @VisibleForTesting

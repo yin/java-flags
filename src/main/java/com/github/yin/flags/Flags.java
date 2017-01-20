@@ -4,14 +4,12 @@ import com.github.yin.flags.analysis.UsagePrinter;
 import com.github.yin.flags.annotations.ClassScanner;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-import com.google.common.collect.*;
+import com.google.common.collect.Iterators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import javax.annotation.Nonnull;
 import java.util.*;
-import java.util.function.Function;
 
 /**
  * Parses program arguments in a specified format and initializes registered static class fields in different
@@ -42,22 +40,22 @@ import java.util.function.Function;
  *
  * @author yin
  */
-public class Flags implements ArgumentProvider {
+public class Flags {
     private static Flags instance;
     private final ClassScanner classScanner;
     private final ClassMetadataIndex classMetadataIndex;
     private final FlagIndex<Flag<?>> flagIndex;
     private final FlagIndex<FlagMetadata> flagMetadataIndex;
-    private ArgumentIndex argumentIndex = ArgumentIndex.EMPTY;
-
     private final TypeConversion typeConversion;
 
     /**
      * Initializes flag values from command-line style arguments.
      * @param args command-line arguments to parse values from
+     * @param packages list of package roots to scan flags
      */
-    public static void init(String[] args) {
-        instance().indexArguments(args);
+    public static void parse(String[] args, Iterable<String> packages) {
+        instance().scan(packages);
+        instance().parseArguments(args);
     }
 
     /**
@@ -91,7 +89,7 @@ public class Flags implements ArgumentProvider {
         try {
             String callerClass = scanCallerClass();
             FlagID id = FlagID.create(callerClass, name);
-            Flag<T> flag = Flag.create(id, type, this, typeConversion);
+            Flag<T> flag = Flag.create(id, type);
             flagIndex.add(id, flag);
             return flag;
         } catch (ClassNotFoundException ex) {
@@ -128,19 +126,10 @@ public class Flags implements ArgumentProvider {
         return instance().flagMetadataIndex;
     }
 
-    /** Clears the argument values. */
-    public static void clear() {
-        instance().clearArguments();
-    }
-
-    /** Returns an {@link ArgumentIndex} instance used to query for argument values. */
-    public ArgumentIndex arguments() {
-        return argumentIndex;
-    }
-
-    /** Type conversions used by Flags. */
-    public TypeConversion getTypeConversion() {
-        return typeConversion;
+    private void scan(Iterable<String> packages) {
+        for (String pkg : packages) {
+            classScanner.scanPackage(pkg, flagMetadataIndex, classMetadataIndex);
+        }
     }
 
     private void printUsageForPackage(String packageProfix) {
@@ -173,35 +162,34 @@ public class Flags implements ArgumentProvider {
         this.classMetadataIndex = classMetadataIndex;
         this.flagIndex = flagIndex;
         this.flagMetadataIndex = flagMetadataIndex;
-        this.argumentIndex = ArgumentIndex.EMPTY;
         this.typeConversion = typeConversion;
     }
 
-    private void indexArguments(String[] args) {
+    private void parseArguments(String[] args) {
         Iterator<String> iterator = Iterators.forArray(args);
-        ArgsAcceptor acceptor = new ArgsAcceptor();
+        ArgsAcceptor acceptor = new ArgsAcceptor(flagIndex, typeConversion);
         acceptor.start();
         while (iterator.hasNext()) {
             String arg = iterator.next();
             if (arg.startsWith("--")) {
-                acceptor.key(arg.substring(2));
+                acceptor.key(arg.substring(2), arg);
+            } else if (arg.startsWith("-")) {
+                acceptor.key(arg.substring(1), arg);
             } else {
                 acceptor.value(arg);
             }
         }
         acceptor.end();
-        argumentIndex = acceptor.buildIndex();
     }
 
     private void indexMap(Map<String, String> options) {
-        ArgsAcceptor acceptor = new ArgsAcceptor();
+        ArgsAcceptor acceptor = new ArgsAcceptor(flagIndex, typeConversion);
         acceptor.start();
         for (Map.Entry<String, String> option : options.entrySet()) {
-            acceptor.key(option.getKey());
+            acceptor.key(option.getKey(), option.getKey());
             acceptor.value(option.getValue());
         }
         acceptor.end();
-        argumentIndex = acceptor.buildIndex();
     }
 
     private String getCallerClassName() {
@@ -216,78 +204,92 @@ public class Flags implements ArgumentProvider {
         return null;
     }
 
-    private void clearArguments() {
-        argumentIndex = ArgumentIndex.EMPTY;
-    }
-
     //TODO yin: Change into ArgumentIndexBuilder and make it look nice
     static class ArgsAcceptor {
         private static final Logger log = LoggerFactory.getLogger(ArgsAcceptor.class);
-        private final Multimap<String, String> arguments = ArrayListMultimap.create();
+        private final List<String> arguments = new ArrayList<String>();
+        private final FlagIndex flags;
+        private final TypeConversion typeConverison;
         private AcceptorState state;
-        private String _key;
+        private Flag lastFlag;
 
         enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
+
+        public ArgsAcceptor(@Nonnull FlagIndex flags, @Nonnull TypeConversion typeConversion) {
+            this.flags = flags;
+            this.typeConverison = typeConversion;
+        }
 
         void start() {
             state = AcceptorState.KEY_EXPECTED;
         }
 
-        void key(String key) {
+        void key(String key, String original) {
             if (state != AcceptorState.KEY_EXPECTED) {
-                log.error("Option {} has no value", _key);
+                errorFlagHasNoValue();
             }
-            this._key = key;
-            state = AcceptorState.VALUE_EXPECTED;
+            Collection<Flag<?>> flagsByName = flags.byName().get(key);
+            if (flagsByName.isEmpty() && parseBooleanFlag(key) == false) {
+                flagsByName = flags.byName().get(key.substring(2));
+            }
+            if (flagsByName.size() == 1) {
+                flag(flagsByName.iterator().next(), key);
+            } else if (flagsByName.isEmpty()) {
+                errorUnknownFlag(original);
+            } else {
+                errorAmbigousFlag(original, flagsByName);
+            }
+        }
+
+        private void flag(Flag<?> flag, String key) {
+            Class<?> flagtype = flag.type();
+            if (flagtype == Boolean.class) {
+                ((Flag<Boolean>) flag).set(parseBooleanFlag(key));
+            } else {
+                this.lastFlag = flag;
+                state = AcceptorState.VALUE_EXPECTED;
+            }
         }
 
         void value(String value) {
             //TODO yin: Add support for multi value options and positional arguments
             if (state == AcceptorState.VALUE_EXPECTED) {
-                arguments.put(this._key, value);
+                Class<?> type = lastFlag.type();
+                TypeConversion.Conversion<?> conversion = typeConverison.forType(type);
+                if (conversion != null) {
+                    lastFlag.set(conversion.apply(value));
+                } else {
+                    throw new UnsupportedOperationException(
+                            String.format("Type conversion for Flag<%s>s is registered, Flag: %s",
+                                    type.getCanonicalName(), lastFlag.flagID().toString()));
+                }
                 state = AcceptorState.KEY_EXPECTED;
             } else {
-                log.error("No option before argument '{}' (temporary rule)", value);
+                arguments.add(value);
             }
         }
 
-        void end() {
+        public List<String> end() {
             if (state != AcceptorState.KEY_EXPECTED) {
-                log.error("Option {} has no value", _key);
+                errorFlagHasNoValue();
             }
+            return arguments;
         }
 
-        ArgumentIndex buildIndex() {
-            return new ArgumentIndex(ImmutableMultimap.copyOf(arguments));
-        }
-    }
-
-    static class ArgumentIndex  {
-        public static final ArgumentIndex EMPTY = new ArgumentIndex(ImmutableMultimap.<String, String>of());
-        private final ImmutableMultimap<String, String> argumentValues;
-
-        public ArgumentIndex(ImmutableMultimap<String, String> argumentValues) {
-            this.argumentValues = argumentValues;
+        private boolean parseBooleanFlag(String key) {
+            return key.startsWith("no");
         }
 
-
-        public Collection<String> all(FlagID flagID) {
-            Collection<String> ret = argumentValues.get(flagID.className() + '.' + flagID.flagName());
-            if (ret == null || ret.isEmpty()) {
-                ret = argumentValues.get(flagID.flagName());
-            }
-            return ret;
+        private void errorUnknownFlag(String flag) {
+            log.error("Unknown flag: {}", flag);
         }
 
-        public String single(FlagID flagID) {
-            Collection<String> ret = this.all(flagID);
-            if (ret != null) {
-                Iterator<String> iter = ret.iterator();
-                if (iter.hasNext()) {
-                    return iter.next();
-                }
-            }
-            return null;
+        private void errorAmbigousFlag(String flag, Collection<Flag<?>> flagsByName) {
+            log.error("Flag {} resolves in multiple classes: {}" , flag, flagsByName);
+        }
+
+        private void errorFlagHasNoValue() {
+            log.error("Option {} has no value", lastFlag);
         }
     }
 }

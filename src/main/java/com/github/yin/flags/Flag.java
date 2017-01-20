@@ -11,27 +11,21 @@ import com.google.auto.value.AutoValue;
  */
 @AutoValue
 public abstract class Flag<T> {
-    static <T> Flag create(FlagID flagID, Class<T> type, ArgumentProvider index, TypeConversion typeConversion) {
-        return new AutoValue_Flag(flagID, type, index, typeConversion);
+    private T value;
+
+    static <T> Flag create(FlagID flagID, Class<T> type) {
+        return new AutoValue_Flag(flagID, type);
     }
 
     abstract FlagID flagID();
 
     abstract Class<T> type();
 
-    protected abstract ArgumentProvider flags();
-
-    protected abstract TypeConversion typeConversion();
-
     public T get() {
-        TypeConversion.Conversion<T> conversion = typeConversion().forType(type());
-        if (conversion != null) {
-            String value = flags().arguments().single(flagID());
-            return conversion.apply(value);
-        } else {
-            throw new UnsupportedOperationException(
-                    String.format("Type conversion for Flag<%s>s is registered, Flag: %s",
-                            type().getCanonicalName(), flagID().toString()));
-        }
+        return value;
+    }
+
+    public void set(T value) {
+        this.value = value;
     }
 }
