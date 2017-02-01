@@ -3,7 +3,6 @@ package com.github.yin.flags;
 import com.github.yin.flags.annotations.FlagDesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMultimap;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -3,13 +3,14 @@ package com.github.yin.flags;
 import com.github.yin.flags.analysis.UsagePrinter;
 import com.github.yin.flags.annotations.ClassScanner;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Iterators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Parses program arguments in a specified format and initializes registered static class fields in different
@@ -93,10 +94,8 @@ public class Flags {
             flagIndex.add(id, flag);
             return flag;
         } catch (ClassNotFoundException ex) {
-            Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
-        //Never reachable: Throwables.propagate() always throws, but IDE does not have this knowledge
-        return null;
     }
 
     /** Prints user-readable usage help for all flags in a given package */
@@ -166,11 +165,9 @@ public class Flags {
     }
 
     private void parseArguments(String[] args) {
-        Iterator<String> iterator = Iterators.forArray(args);
         ArgsAcceptor acceptor = new ArgsAcceptor(flagIndex, typeConversion);
         acceptor.start();
-        while (iterator.hasNext()) {
-            String arg = iterator.next();
+        for (String arg : args) {
             if (arg.startsWith("--")) {
                 acceptor.key(arg.substring(2), arg);
             } else if (arg.startsWith("-")) {
