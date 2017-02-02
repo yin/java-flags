@@ -47,7 +47,7 @@ public class Flags {
     private final ClassMetadataIndex classMetadataIndex;
     private final FlagIndex<Flag<?>> flagIndex;
     private final FlagIndex<FlagMetadata> flagMetadataIndex;
-    private final TypeConversion typeConversion;
+    private final BasicFlag typeConversion;
 
     /**
      * Initializes flag values from command-line style arguments.
@@ -62,44 +62,12 @@ public class Flags {
     /**
      * Returns flag value accessor for <code>String</code> type. See create().
      */
-    public static Flag<String> string(String name) {
-        return create(String.class, name);
+    public static Flag<String> create(String defaultz) {
+        return new BasicFlag.StringFlag(defaultz);
     }
 
-    /**
-     * Returns flag value accessor, which can be used to retrieve the actual flag value supplied
-     * by command line arguments or by other mechanism (such as <code>initForTesting()</code>).
-     * Preferably the typespecific variants (<code>string()</code>, ...) should be used for
-     * readability reasons.
-     *
-     * <pre>{@code
-     * &at;FlagDesc("Specifies path to input file")
-     * private static final Flag&lt;String&gt; flag_inputPath = Flags.create(String.class, "inputPath");
-     * }</pre>
-     *
-     * @param type of the provided flag value
-     * @param name of the flag. This is must match the name the field or name attribute in @FlagDesc annotation.
-     * @param <T> is the same as flag value type
-     * @return Flag accessor for flag value identified by <code>name</code>
-     */
-    public static <T> Flag<T> create(Class<T> type, String name) {
-        return instance().createFlag(type, name);
-    }
-
-    private <T> Flag<T> createFlag(Class<T> type, String name) {
-        try {
-            String callerClass = scanCallerClass();
-            FlagID id = FlagID.create(callerClass, name);
-            Flag<T> flag = Flag.create(id, type);
-            flagIndex.add(id, flag);
-            return flag;
-        } catch (ClassNotFoundException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
 
     /** Prints user-readable usage help for all flags in a given package */
-    // TODO yin: Subsequent calls will always print previously scanned packages, fix
     public static void printUsage(String packagePrefix) {
         instance().printUsageForPackage(packagePrefix);
     }
@@ -149,14 +117,14 @@ public class Flags {
     private static Flags instance() {
         synchronized (Flags.class) {
             if (instance == null) {
-                instance = new Flags(new ClassScanner(), new ClassMetadataIndex(), new FlagIndex<Flag<?>>(),
-                        new FlagIndex<FlagMetadata>(), new TypeConversion());
+                instance = new Flags(new ClassScanner(), new ClassMetadataIndex(), new FlagIndex<>(),
+                        new FlagIndex<>(), new BasicFlag());
             }
         }
         return instance;
     }
 
-    private Flags(ClassScanner classScanner, ClassMetadataIndex classMetadataIndex, FlagIndex<Flag<?>> flagIndex, FlagIndex<FlagMetadata> flagMetadataIndex, TypeConversion typeConversion) {
+    private Flags(ClassScanner classScanner, ClassMetadataIndex classMetadataIndex, FlagIndex<Flag<?>> flagIndex, FlagIndex<FlagMetadata> flagMetadataIndex, BasicFlag typeConversion) {
         this.classScanner = classScanner;
         this.classMetadataIndex = classMetadataIndex;
         this.flagIndex = flagIndex;
@@ -201,18 +169,17 @@ public class Flags {
         return null;
     }
 
-    //TODO yin: Change into ArgumentIndexBuilder and make it look nice
     static class ArgsAcceptor {
         private static final Logger log = LoggerFactory.getLogger(ArgsAcceptor.class);
         private final List<String> arguments = new ArrayList<String>();
         private final FlagIndex flags;
-        private final TypeConversion typeConverison;
+        private final BasicFlag typeConverison;
         private AcceptorState state;
         private Flag lastFlag;
 
         enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
 
-        public ArgsAcceptor(@Nonnull FlagIndex flags, @Nonnull TypeConversion typeConversion) {
+        public ArgsAcceptor(@Nonnull FlagIndex flags, @Nonnull BasicFlag typeConversion) {
             this.flags = flags;
             this.typeConverison = typeConversion;
         }
@@ -252,7 +219,7 @@ public class Flags {
             //TODO yin: Add support for multi value options and positional arguments
             if (state == AcceptorState.VALUE_EXPECTED) {
                 Class<?> type = lastFlag.type();
-                TypeConversion.Conversion<?> conversion = typeConverison.forType(type);
+                BasicFlag.Conversion<?> conversion = typeConverison.forType(type);
                 if (conversion != null) {
                     lastFlag.set(conversion.apply(value));
                 } else {
