@@ -13,45 +13,16 @@ import java.util.function.Function;
  *  a argument String value and returns its representation in another type. Clients can register own
  *  type conversions and override the default conversions, including {@link String}.
  */
+@Deprecated
 public class TypeConversion {
     private HashMap<Class<?>, Function<String, ?>> typeConversions = Maps.newHashMap();
     private final ImmutableMap DEFAULT_CONVERSIONS = ImmutableMap.<Class<?>, Conversion<?>>builder()
-            .put(String.class, new Conversion<String>() {
-                @Override
-                public String apply(String s) {
-                    return s;
-                }
-            })
-            .put(Integer.class, new Conversion<Integer>() {
-                @Override
-                public Integer apply(String s) {
-                    return Integer.parseInt(s);
-                }
-            })
-            .put(Float.class, new Conversion<Float>() {
-                @Override
-                public Float apply(String s) {
-                    return Float.parseFloat(s);
-                }
-            })
-            .put(Double.class, new Conversion<Double>() {
-                @Override
-                public Double apply(String s) {
-                    return Double.parseDouble(s);
-                }
-            })
-            .put(BigInteger.class, new Conversion<BigInteger>() {
-                @Override
-                public BigInteger apply(String s) {
-                    return new BigInteger(s);
-                }
-            })
-            .put(BigDecimal.class, new Conversion<BigDecimal>() {
-                @Override
-                public BigDecimal apply(String s) {
-                    return new BigDecimal(s);
-                }
-            })
+            .put(String.class, s -> s)
+            .put(Integer.class, s -> Integer.parseInt(s))
+            .put(Float.class, s -> Float.parseFloat(s))
+            .put(Double.class, s -> Double.parseDouble(s))
+            .put(BigInteger.class, s -> new BigInteger(s))
+            .put(BigDecimal.class, s -> new BigDecimal(s))
             .build();
 
     /** Returns type-conversion function for given type. */
@@ -75,6 +46,7 @@ public class TypeConversion {
      * Converts {@link String} value of a flag into the desired type. This is requirement for
      * pre-Java 8 clients and @FunctionalInterface can not be used here.
      */
+    @FunctionalInterface
     public interface Conversion<T> {
         T apply(String value);
     }
