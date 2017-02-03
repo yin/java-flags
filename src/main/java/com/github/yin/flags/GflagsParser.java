@@ -9,24 +9,23 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Accepts arguments, flags and their values and injects the values into @{Flag}'s
- * using {@link TypeConversion}.
+ * Parses command-line arguments under rules defined by:
+ * https://gflags.github.io/gflags/
  */
-class GflagsParser {
+class GflagsParser implements Parser<String[]> {
     private static final Logger log = LoggerFactory.getLogger(GflagsParser.class);
     private final List<String> arguments = new ArrayList<String>();
     private final FlagIndex flags;
-    private final TypeConversion typeConverison;
     private AcceptorState state;
     private Flag lastFlag;
 
     enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
 
-    public GflagsParser(@Nonnull FlagIndex flags, @Nonnull TypeConversion typeConversion) {
+    public GflagsParser(@Nonnull FlagIndex flags) {
         this.flags = flags;
-        this.typeConverison = typeConversion;
     }
 
+    @Override
     public List<String> parse(String[] args) {
         start();
         for (String arg : args) {
@@ -100,9 +99,9 @@ class GflagsParser {
     }
 
     protected void handleFlag(Flag<?> flag) {
-        Class<?> flagtype = flag.type();
-        if (flagtype == Boolean.class) {
-            ((Flag<Boolean>) flag).set(true);
+        Class<?> flagtype = flag.getClass();
+        if (BasicFlag.BooleanFlag.class.isAssignableFrom(flagtype)) {
+            flag.parse("true");
         } else {
             this.lastFlag = flag;
             state = AcceptorState.VALUE_EXPECTED;
@@ -111,26 +110,17 @@ class GflagsParser {
 
     protected void handleFalseFlag(Flag<?> flag, String orig) {
         Class<?> flagtype = flag.getClass();
-        if (flagtype == Boolean.class) {
-            ((Flag<Boolean>) flag).set(false);
+        if (BasicFlag.BooleanFlag.class.isAssignableFrom(flagtype)) {
+            flag.parse("false");
         } else {
             errorUnknownFlag(orig);
         }
     }
 
-    //TODO yin: Add support for multi value options and positional arguments
     protected void handleValue(String value) {
         //TODO yin: Add support for collections
         if (state == AcceptorState.VALUE_EXPECTED) {
-            Class<?> type = lastFlag.type();
-            TypeConversion.Conversion<?> conversion = typeConverison.forType(type);
-            if (conversion != null) {
-                lastFlag.set(conversion.apply(value));
-            } else {
-                throw new UnsupportedOperationException(
-                        String.format("Type conversion for Flag<%s>s is registered, Flag: %s",
-                                type.getCanonicalName(), lastFlag.flagID().toString()));
-            }
+            lastFlag.parse(value);
             state = AcceptorState.KEY_EXPECTED;
         } else {
             arguments.add(value);
@@ -144,15 +134,15 @@ class GflagsParser {
         return arguments;
     }
 
-    private void errorUnknownFlag(String flag) {
+    protected void errorUnknownFlag(String flag) {
         log.error("Unknown flag: {}", flag);
     }
 
-    private void errorAmbigousFlag(String flag, Collection<Flag<?>> flagsByName) {
+    protected void errorAmbigousFlag(String flag, Collection<Flag<?>> flagsByName) {
         log.error("Flag {} resolves in multiple classes: {}", flag, flagsByName);
     }
 
-    private void errorFlagHasNoValue() {
+    protected void errorFlagHasNoValue() {
         log.error("Option {} has no value", lastFlag);
     }
 }
