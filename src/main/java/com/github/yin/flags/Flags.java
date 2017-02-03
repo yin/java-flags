@@ -53,6 +53,10 @@ public class Flags {
         instance().parseArguments(args);
     }
 
+    private void parseArguments(String[] args) {
+        new GflagsParser(flagIndex, typeConversion).parse(args);
+    }
+
     /**
      * Returns flag value accessor for <code>String</code> type. See create().
      */
@@ -158,29 +162,9 @@ public class Flags {
         this.typeConversion = typeConversion;
     }
 
-    private void parseArguments(String[] args) {
-        ArgsAcceptor acceptor = new ArgsAcceptor(flagIndex, typeConversion);
-        acceptor.start();
-        for (String arg : args) {
-            if (arg.startsWith("--")) {
-                acceptor.key(arg.substring(2), arg);
-            } else if (arg.startsWith("-")) {
-                acceptor.key(arg.substring(1), arg);
-            } else {
-                acceptor.value(arg);
-            }
-        }
-        acceptor.end();
-    }
-
     private void indexMap(Map<String, String> options) {
-        ArgsAcceptor acceptor = new ArgsAcceptor(flagIndex, typeConversion);
-        acceptor.start();
-        for (Map.Entry<String, String> option : options.entrySet()) {
-            acceptor.key(option.getKey(), option.getKey());
-            acceptor.value(option.getValue());
-        }
-        acceptor.end();
+        MapParser parser = new MapParser(flagIndex, typeConversion);
+        parser.parse(options);
     }
 
     private String getCallerClassName() {
