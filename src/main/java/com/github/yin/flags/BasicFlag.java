@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * Handles {@link #get()}, leaving {@link #parse(String)}
+ * Handles {@link #get()}, and {@link #validator(Validator)}, leaving {@link #parse(String)}
  * for implementation by clients.
  */
 public abstract class BasicFlag<T> implements Flag<T> {
@@ -17,6 +17,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = String.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -28,6 +31,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = Boolean.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -39,6 +45,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = Integer.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -50,6 +59,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = Long.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -61,6 +73,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = Float.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -72,6 +87,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = Double.valueOf(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -83,6 +101,9 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = new BigInteger(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
@@ -94,9 +115,13 @@ public abstract class BasicFlag<T> implements Flag<T> {
         @Override
         public void parse(@Nonnull String value) {
             this.value = new BigDecimal(value);
+            if (validator != null) {
+                validator.validate(this.value);
+            }
         }
     }
 
+    protected Validator<T> validator;
     protected T value;
 
     public BasicFlag(T defaultz) {
@@ -106,5 +131,11 @@ public abstract class BasicFlag<T> implements Flag<T> {
     @Override
     public T get() {
         return value;
+    }
+
+    @Override
+    public Flag<T> validator(Validator<T> validator) {
+        this.validator = validator;
+        return this;
     }
 }
