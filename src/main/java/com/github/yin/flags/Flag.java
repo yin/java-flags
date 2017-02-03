@@ -1,31 +1,37 @@
 package com.github.yin.flags;
 
-import com.google.auto.value.AutoValue;
-
 /**
- * Provides Flag value and type-conversion to program classes. To access the argument value,
- * statically initialize a Flag by calling <code>Flags.create(type, name)</code>. Then use
- * method {@link Flag#get()} to get the value.
+ * Provides Flag value access and validation to client classes. Flag value is injected into static
+ * fields of type {@link Flag<?>} and accessed using {@link #get()}.
+ *
+ * {@link #parse(String)} is never used by client classes, but should be implemented if a custom
+ * return type is desired from {@link #get()}.
  *
  * @author yin
  */
-@AutoValue
-public abstract class Flag<T> {
-    private T value;
-
-    static <T> Flag create(FlagID flagID, Class<T> type) {
-        return new AutoValue_Flag(flagID, type);
+public interface Flag<T> {
+    /**
+     * Validates parsed flag values. May be used to enforce compile-time constraints safely and
+     * also run-time if care is taken to avoid lockup in a mutually recursive chain of {@link #get()}'s.
+     */
+    @FunctionalInterface
+    interface Validator<T> {
+        void validate(T value);
     }
 
-    abstract FlagID flagID();
+    /**
+     * Attaches a {@link Validator<T>} function to this flag instance.
+     */
+    Flag validator(Validator<T> validator);
 
-    abstract Class<T> type();
+    /**
+     * Attempts parsing a {@link String} representation of a value and is responsible for calling
+     * the validator function afterwards.
+     */
+    void parse(String value);
 
-    public T get() {
-        return value;
-    }
-
-    public void set(T value) {
-        this.value = value;
-    }
+    /**
+     * Returns value stored in the flag, possibly a default value.
+     */
+    T get();
 }
