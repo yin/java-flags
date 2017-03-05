@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class FlagsTest {
@@ -17,8 +18,14 @@ public class FlagsTest {
     @BeforeClass
     public static void setupClass() {
         //TODO yin: instantiate a flags instance for the future
-        Flags.parse(new String[]{"--input", "filename.ext"},
+    }
+
+    @Test
+    public void injectValues() throws Exception {
+        Flags.parse(new String[]{"--dummy", "value"},
                 Arrays.asList(TESTFLAGS_PACKAGE));
+
+        assertEquals("should inject flag value", "value", TestFlagDesc.get());
     }
 
     @Test

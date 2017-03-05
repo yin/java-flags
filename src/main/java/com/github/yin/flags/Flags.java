@@ -187,17 +187,4 @@ public class Flags {
         MapParser parser = new MapParser(flagIndex);
         parser.parse(options);
     }
-
-    private String getCallerClassName() {
-        StackTraceElement[] stackTrace =  Thread.currentThread().getStackTrace();
-        String myType = Flags.class.getCanonicalName();
-        String threadType =  Thread.class.getCanonicalName();
-        for (StackTraceElement e : stackTrace) {
-            if (!e.getClassName().equals(myType) && !e.getClassName().equals(threadType)) {
-                return e.getClassName();
-            }
-        }
-        return null;
-    }
-
 }
