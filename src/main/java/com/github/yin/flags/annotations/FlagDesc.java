@@ -29,5 +29,5 @@ public @interface FlagDesc {
     /** Name of flag */
     String name() default "";
     /** Flag description */
-    String value();
+    String value() default "";
 }

@@ -14,9 +14,9 @@ import java.util.Map;
  */
 public class MapParser implements Parser<Map<String, String>> {
     private static final Logger log = LoggerFactory.getLogger(GflagsParser.class);
-    private final FlagIndex flags;
+    private final FlagIndex<FlagMetadata> flags;
 
-    public MapParser(@Nonnull FlagIndex flags) {
+    public MapParser(@Nonnull FlagIndex<FlagMetadata> flags) {
         this.flags = flags;
     }
 
@@ -29,9 +29,9 @@ public class MapParser implements Parser<Map<String, String>> {
     }
 
     protected void next(String key, String value) {
-        Collection<Flag<?>> flagsByName = flags.byName().get(key);
+        Collection<FlagMetadata> flagsByName = flags.byName().get(key);
         if (flagsByName.size() == 1) {
-            flagsByName.iterator().next().parse(value);
+            flagsByName.iterator().next().flag().parse(value);
         } else if (flagsByName.isEmpty()) {
             errorUnknownFlag(key);
         } else {
@@ -43,7 +43,8 @@ public class MapParser implements Parser<Map<String, String>> {
         log.error("Unknown flag: {}", flag);
     }
 
-    protected void errorAmbigousFlag(String flag, Collection<Flag<?>> flagsByName) {
-        log.error("Flag {} resolves in multiple classes: {}", flag, flagsByName);
+    protected void errorAmbigousFlag(String flag, Collection<FlagMetadata> flagsByName) {
+        log.error("Flag {} resolves in multiple classes: {}", flag,
+                flagsByName.stream().map(meta -> meta.flagID()).toArray());
     }
 }

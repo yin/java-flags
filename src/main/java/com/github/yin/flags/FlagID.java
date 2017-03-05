@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
  */
 @AutoValue
 public abstract class FlagID implements Comparable<FlagID> {
-    static FlagID create(String className, String flagName) {
+    public static FlagID create(String className, String flagName) {
         return new AutoValue_FlagID(className, flagName);
     }
 

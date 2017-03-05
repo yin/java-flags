@@ -15,13 +15,13 @@ import java.util.List;
 class GflagsParser implements Parser<String[]> {
     private static final Logger log = LoggerFactory.getLogger(GflagsParser.class);
     private final List<String> arguments = new ArrayList<String>();
-    private final FlagIndex flags;
+    private final FlagIndex<FlagMetadata> flags;
     private AcceptorState state;
-    private Flag lastFlag;
+    private FlagMetadata lastMeta;
 
     enum AcceptorState {KEY_EXPECTED, VALUE_EXPECTED}
 
-    public GflagsParser(@Nonnull FlagIndex flags) {
+    public GflagsParser(@Nonnull FlagIndex<FlagMetadata> flags) {
         this.flags = flags;
     }
 
@@ -63,7 +63,7 @@ class GflagsParser implements Parser<String[]> {
         if (state != AcceptorState.KEY_EXPECTED) {
             errorFlagHasNoValue();
         }
-        Collection<Flag<?>> flagsByName = flags.byName().get(key);
+        Collection<FlagMetadata> flagsByName = flags.byName().get(key);
         if (flagsByName.isEmpty() && key.startsWith("no")) {
             flagsByName = flags.byName().get(key.substring(2));
             if (flagsByName.size() == 1) {
@@ -87,7 +87,7 @@ class GflagsParser implements Parser<String[]> {
         if (state != AcceptorState.KEY_EXPECTED) {
             errorFlagHasNoValue();
         }
-        Collection<Flag<?>> flagsByName = flags.byName().get(key);
+        Collection<FlagMetadata> flagsByName = flags.byName().get(key);
         if (flagsByName.size() == 1) {
             handleFlag(flagsByName.iterator().next());
             handleValue(value);
@@ -98,20 +98,20 @@ class GflagsParser implements Parser<String[]> {
         }
     }
 
-    protected void handleFlag(Flag<?> flag) {
-        Class<?> flagtype = flag.getClass();
+    protected void handleFlag(FlagMetadata meta) {
+        Class<?> flagtype = meta.getClass();
         if (BasicFlag.BooleanFlag.class.isAssignableFrom(flagtype)) {
-            flag.parse("true");
+            meta.flag().parse("true");
         } else {
-            this.lastFlag = flag;
+            this.lastMeta = meta;
             state = AcceptorState.VALUE_EXPECTED;
         }
     }
 
-    protected void handleFalseFlag(Flag<?> flag, String orig) {
-        Class<?> flagtype = flag.getClass();
+    protected void handleFalseFlag(FlagMetadata meta, String orig) {
+        Class<?> flagtype = meta.getClass();
         if (BasicFlag.BooleanFlag.class.isAssignableFrom(flagtype)) {
-            flag.parse("false");
+            meta.flag().parse("false");
         } else {
             errorUnknownFlag(orig);
         }
@@ -120,7 +120,7 @@ class GflagsParser implements Parser<String[]> {
     protected void handleValue(String value) {
         //TODO yin: Add support for collections
         if (state == AcceptorState.VALUE_EXPECTED) {
-            lastFlag.parse(value);
+            lastMeta.flag().parse(value);
             state = AcceptorState.KEY_EXPECTED;
         } else {
             arguments.add(value);
@@ -138,11 +138,12 @@ class GflagsParser implements Parser<String[]> {
         log.error("Unknown flag: {}", flag);
     }
 
-    protected void errorAmbigousFlag(String flag, Collection<Flag<?>> flagsByName) {
-        log.error("Flag {} resolves in multiple classes: {}", flag, flagsByName);
+    protected void errorAmbigousFlag(String flag, Collection<FlagMetadata> flagsByName) {
+        log.error("Flag {} resolves in multiple classes: {}", flag,
+                flagsByName.stream().map(meta -> meta.flagID()).toArray());
     }
 
     protected void errorFlagHasNoValue() {
-        log.error("Option {} has no value", lastFlag);
+        log.error("Option {} has no value", lastMeta);
     }
 }

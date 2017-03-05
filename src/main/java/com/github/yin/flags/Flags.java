@@ -3,13 +3,10 @@ package com.github.yin.flags;
 import com.github.yin.flags.analysis.UsagePrinter;
 import com.github.yin.flags.annotations.ClassScanner;
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Map;
 
 /**
  * Provides static API for creating built-in flags, parsing arguments and
@@ -49,15 +46,13 @@ public class Flags {
     private static Flags instance;
     private final ClassScanner classScanner;
     private final ClassMetadataIndex classMetadataIndex;
-    private final FlagIndex<Flag<?>> flagIndex;
-    private final FlagIndex<FlagMetadata> flagMetadataIndex;
+    private final FlagIndex<FlagMetadata> flagIndex;
 
     /**
      * Initializes flag values from command-line style arguments.
      * @param args command-line arguments to parse values from
      * @param packages list of package roots to scan flags
      */
-    @SuppressWarnings("unused")
     public static void parse(String[] args, Iterable<String> packages) {
         instance().scan(packages);
         instance._parse(args);
@@ -143,39 +138,36 @@ public class Flags {
 
     @VisibleForTesting
     static FlagIndex flagMetadata() {
-        return instance().flagMetadataIndex;
+        return instance().flagIndex;
     }
 
     private void scan(Iterable<String> packages) {
         for (String pkg : packages) {
-            classScanner.scanPackage(pkg, flagMetadataIndex, classMetadataIndex);
+            classScanner.scanPackage(pkg, flagIndex, classMetadataIndex);
         }
     }
 
     private void printUsageForPackage(String packagePrefix) {
         synchronized (this) {
-            classScanner.scanPackage(packagePrefix, flagMetadataIndex, classMetadataIndex);
+            classScanner.scanPackage(packagePrefix, flagIndex, classMetadataIndex);
         }
-        new UsagePrinter().printUsage(flagMetadataIndex, classMetadataIndex, System.out);
+        new UsagePrinter().printUsage(flagIndex, classMetadataIndex, System.out);
     }
 
 
     private static Flags instance() {
         synchronized (Flags.class) {
             if (instance == null) {
-                instance = new Flags(new ClassScanner(), new ClassMetadataIndex(), new FlagIndex<>(),
-                        new FlagIndex<>());
+                instance = new Flags(new ClassScanner(), new ClassMetadataIndex(), new FlagIndex<>());
             }
         }
         return instance;
     }
 
-    private Flags(ClassScanner classScanner, ClassMetadataIndex classMetadataIndex, FlagIndex<Flag<?>> flagIndex,
-                  FlagIndex<FlagMetadata> flagMetadataIndex) {
+    private Flags(ClassScanner classScanner, ClassMetadataIndex classMetadataIndex, FlagIndex<FlagMetadata> flagIndex) {
         this.classScanner = classScanner;
         this.classMetadataIndex = classMetadataIndex;
         this.flagIndex = flagIndex;
-        this.flagMetadataIndex = flagMetadataIndex;
     }
 
     private void _parse(String[] args) {
@@ -186,5 +178,18 @@ public class Flags {
     private void _parse(Map<String, String> options) {
         MapParser parser = new MapParser(flagIndex);
         parser.parse(options);
+    }
+
+    /**
+     * I am so stupid, that I forgotten to change this javadoc, me fool.
+     */
+    public static class ParseException extends RuntimeException {
+        public ParseException(String message, Throwable throwable) {
+            super(message, throwable);
+        }
+
+        public ParseException(String message) {
+            super(message);
+        }
     }
 }
