@@ -2,7 +2,7 @@ package com.github.yin.flags;
 
 /**
  * Provides Flag value access and validation to client classes. Flag value is injected into static
- * fields of type {@link Flag<?>} and accessed using {@link #get()}.
+ * fields of type {@link Flag} and accessed using {@link #get()}.
  *
  * {@link #parse(String)} is never used by client classes, but should be implemented if a custom
  * return type is desired from {@link #get()}.
@@ -20,7 +20,7 @@ public interface Flag<T> {
     }
 
     /**
-     * Attaches a {@link Validator<T>} function to this flag instance.
+     * Attaches a {@link Validator} function to this flag instance.
      */
     Flag validator(Validator<T> validator);
 

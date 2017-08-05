@@ -10,26 +10,26 @@ import java.util.Map;
 
 /**
  * Provides static API for creating built-in flags, parsing arguments and
- * injecting flag values into {@link Flag<?>}'s.
+ * injecting flag values into {@link Flag}'s.
  *
  * Client applications should not attempt to parse flags multiple times.
  * Tests are an exception, where we provide method {@link Flags#parse(Map, Iterable)}).
  *
  * Example:
- * <pre>{@link
+ * <pre>
  * @FlagDesc("Processes some actions from command-line.")
  * public static class ReportMain {
  *
  *     static final String APP_PACKAGE = "com.github.yin.java.flags.example";
  *
  *     @FlagDesc("Print additional information")
- *     static final Flag<Boolean> verbose = Flags.create(false);
+ *     static final Flag&lt;Boolean&gt; verbose = Flags.create(false);
  *
  *     public static main(String[] args) {
- *         List<String> arguments = Flags.init(args, Arrays.asList({
+ *         List&gt;String&lt; arguments = Flags.init(args, Arrays.asList({
  *             APP_PACKAGE
  *         }));
- *         if (arguments.size() > 0) {
+ *         if (arguments.size() &lt; 0) {
  *             if (foo.get() == true) {
  *                 // ...
  *             } else {
@@ -40,7 +40,7 @@ import java.util.Map;
  *         }
  *     }
  * }
- * }</pre>
+ * </pre>
  */
 public class Flags {
     private static Flags instance;
