@@ -1,4 +1,4 @@
-Java-Flags
+java-flags
 ==========
 
 Light-weight command-line flags using an easy-to-use static binding approach. It provides annotations to describe
@@ -11,15 +11,15 @@ To use a command-line flag value you need to create an accessor for it. This is 
 by one of the specific variants:
 
 ````java
-class ProgramModule {
-    static final Flag<String> arg_inputFile = Flags.string("inputFile");
+class ReadmeExample {
+    static final Flag<String> inputFile = Flags.string("inputFile");
 }
 ````
 
 The `name` argument must match the flag name as specified on command-line (without '`--`' prepended), i.e.:
 
 ````bash
-java ProgramRunner --inputFile input.txt
+java ProgramRunner --input input.txt
 ````
 
 In your program `main()` method pass the command-line arguments to `Flags`:
@@ -27,7 +27,7 @@ In your program `main()` method pass the command-line arguments to `Flags`:
 ````java
 public class ProgramRunner {
     public static main(String[] args) {
-        Flags.init(args);
+        Flags.parse(args);
         // ....
     }
 }
@@ -37,11 +37,12 @@ To access the flag value, use the accessor `get()` method. This is typically don
 in a Guice Module `Provider`:
 
 ````java
-class ProgramModule {
+public class ReadmeExample {
+    static final Flag<String> input = Flags.string("");
     // ...
-    final String inputFile;
-    ProgramModule() {
-        this.inputfile = arg_inputFile.get();
+
+    ReadmeExample() {
+	this.inputfile = input.get();
     }
 }
 ````
@@ -51,33 +52,37 @@ class ProgramModule {
 And finally, to attach some docs and generate the documentation, you just use the @FlagDesc annotation:
 
 ````java
-@FlagDesc("This class uses java-flags")
-public static class ProgramModule {
-    @FlagDesc("This is a java-flag accessor")
-    private static final Flag<String> arg_inputFile = Flags.string("inputFile");
+@FlagDesc("This class is an example how to print files")
+public class ReadmeExample {
+    @FlagDesc("Specifies path to input file")
+    static final Flag<String> input = Flags.string("");
+    // ...
 }
 ````
 
 ... and call the `printUsage()` method for you program package:
 
 ````java
-public class ProgramRunner {
-    public static main(String[] args) {
-        if (!check()) {
-            Flags.printUsage("com.github.yin.flags.example");
-        }
+@FlagDesc("This class is an example how to print files")
+public class ReadmeExample {
+    // ...
+    public static void main(String[] args) {
+	Flags.init(args);
+	ReadmeExample re = new ReadmeExample();
+
+	if (!re.check()) {
+	    Flags.printUsage();
+	    System.exit(1);
+	    return;
+	}
+
+	re.run();
     }
+    // ...
 }
 ````
 
-### Type conversions
-
-String value of a flag is converted by `Flag.get()` into the target type `T` by calling a
-`TypeConversion.Conversion<T>` function. Default conversions for all primitive types,
-BigInteger and BigDecimal will work out of the box.
-
-If String value can not be parsed an exception is always thrown when calling `Flag.get()`.
-Clients can register their own type conversion:
+### Validators
 
 ````java
 public class ProgramRunner {
@@ -103,7 +108,7 @@ Just grab the package from Maven Central:
 <dependency>
     <groupdId>com.github.yin.flags</groupId>
     <artifactId>java-flags</artifactId>
-    <version>0.2</version>
+    <version>0.3</version>
 </dependency>
 ````
 
