@@ -10,21 +10,20 @@ import java.lang.annotation.Target;
  * {@link FlagDesc#name()} is used to determine flag name, otherwise field name of the
  * annotated field is used.
  *
- * For classpath-scanning to work correctly, each class having a @FlagDesc member must be
- * itself annotated with @FlagDesc.
+ * For classpath-scanning to work correctly, each class having a {@code @FlagDesc} member must be
+ * itself annotated with {@code @FlagDesc}.
  *
- * <pre>{@code
- * @FlagDesc("This class uses java-flags")
+ * <pre>
+ * {@literal @}FlagDesc("This class uses java-flags")
  * public class TestFlagDesc {
- *     @FlagDesc("This is a java-flag accessor")
- *     private static final Flag<String> arg_inputFile = Flags.string("inputFile");
+ *     {@literal @}FlagDesc("This is a java-flag accessor")
+ *     private static final Flag&lt;String&gt; arg_inputFile = Flags.create("inputFile");
  * }
- * }</pre>
+ * </pre>
  *
  * @author yin
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME) @Target({ ElementType.FIELD, ElementType.TYPE})
 public @interface FlagDesc {
     /** Name of flag */
     String name() default "";

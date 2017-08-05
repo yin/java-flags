@@ -17,12 +17,12 @@ import java.util.Map;
  *
  * Example:
  * <pre>
- * @FlagDesc("Processes some actions from command-line.")
+ * {@literal @}FlagDesc("Processes some actions from command-line.")
  * public static class ReportMain {
  *
  *     static final String APP_PACKAGE = "com.github.yin.java.flags.example";
  *
- *     @FlagDesc("Print additional information")
+ *     {@literal @}FlagDesc("Print additional information")
  *     static final Flag&lt;Boolean&gt; verbose = Flags.create(false);
  *
  *     public static main(String[] args) {

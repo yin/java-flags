@@ -8,7 +8,7 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 /**
- * Scans classpath for {@Flag<?>} fields and classes putting them into index.
+ * Scans classpath for {@code Flag} fields and classes putting them into index.
  */
 public class ClassScanner {
     public void scanPackage(String packagePrefix, FlagIndex<FlagMetadata> flags, ClassMetadataIndex classMetaIndex) {
