@@ -7,7 +7,9 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,11 +23,43 @@ public class FlagsTest {
     }
 
     @Test
-    public void injectValues() throws Exception {
-        Flags.parse(new String[]{"--dummy", "value"},
+    public void onlyFlag() throws Exception {
+        List<String> nonFlags = Flags.parse(new String[]{"--dummy", "value"},
                 Arrays.asList(TESTFLAGS_PACKAGE));
 
         assertEquals("should inject flag value", "value", TestFlagDesc.get());
+        assertEquals(nonFlags.size(), 0);
+    }
+
+    @Test
+    public void onlyArgs() throws Exception {
+        List<String> nonFlags = Flags.parse(new String[]{"just", "args"},
+                Arrays.asList(TESTFLAGS_PACKAGE));
+
+        assertEquals("should inject flag value", "", TestFlagDesc.get());
+        assertArrayEquals("Arguments should be: just, args",
+                nonFlags.toArray(new String[0]), new String[] { "just", "args" });
+    }
+
+    @Test
+    public void flagsThenArgs() throws Exception {
+        List<String> nonFlags = Flags.parse(new String[]{"--dummy", "value", "just", "args"},
+                Arrays.asList(TESTFLAGS_PACKAGE));
+
+        assertEquals("should inject flag value", "value", TestFlagDesc.get());
+        assertArrayEquals("Arguments should be: just, args",
+                nonFlags.toArray(new String[0]), new String[] { "just", "args" });
+    }
+
+    @Test
+    public void argsThenFlags() throws Exception {
+        List<String> nonFlags = Flags.parse(new String[]{"just", "args", "--dummy", "value"},
+                Arrays.asList(TESTFLAGS_PACKAGE));
+
+        assertEquals("should inject flag value", "value", TestFlagDesc.get());
+        assertArrayEquals("Arguments should be: just, args",
+                nonFlags.toArray(new String[0]), new String[] { "just", "args" });
+
     }
 
     @Test
