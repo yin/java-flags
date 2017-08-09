@@ -6,6 +6,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,9 +54,9 @@ public class Flags {
      * @param args command-line arguments to parse values from
      * @param packages list of package roots to scan flags
      */
-    public static void parse(String[] args, Iterable<String> packages) {
+    public static List<String> parse(String[] args, Iterable<String> packages) {
         instance().scan(packages);
-        instance._parse(args);
+        return instance._parse(args);
     }
 
     /**
@@ -170,9 +171,9 @@ public class Flags {
         this.flagIndex = flagIndex;
     }
 
-    private void _parse(String[] args) {
+    private List<String> _parse(String[] args) {
         GflagsParser parser = new GflagsParser(flagIndex);
-        parser.parse(args);
+        return parser.parse(args);
     }
 
     private void _parse(Map<String, String> options) {
