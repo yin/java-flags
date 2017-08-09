@@ -12,7 +12,7 @@ by one of the specific variants:
 
 ````java
 class ReadmeExample {
-    static final Flag<String> inputFile = Flags.string("inputFile");
+    static final Flag<String> input = Flags.create("");
 }
 ````
 
@@ -27,7 +27,7 @@ In your program `main()` method pass the command-line arguments to `Flags`:
 ````java
 public class ProgramRunner {
     public static main(String[] args) {
-        Flags.parse(args);
+            Flags.parse(args, ImmutableList.of("com.github.yin.flags.example"));
         // ....
     }
 }
@@ -38,7 +38,8 @@ in a Guice Module `Provider`:
 
 ````java
 public class ReadmeExample {
-    static final Flag<String> input = Flags.string("");
+    static final Flag<String> input = Flags.create("");
+    private final String inputfile;
     // ...
 
     ReadmeExample() {
@@ -55,7 +56,7 @@ And finally, to attach some docs and generate the documentation, you just use th
 @FlagDesc("This class is an example how to print files")
 public class ReadmeExample {
     @FlagDesc("Specifies path to input file")
-    static final Flag<String> input = Flags.string("");
+    static final Flag<String> input = Flags.create("");
     // ...
 }
 ````
@@ -67,16 +68,23 @@ public class ReadmeExample {
 public class ReadmeExample {
     // ...
     public static void main(String[] args) {
-	Flags.init(args);
-	ReadmeExample re = new ReadmeExample();
-
-	if (!re.check()) {
-	    Flags.printUsage();
-	    System.exit(1);
-	    return;
-	}
-
-	re.run();
+        try {
+            Flags.parse(args, ImmutableList.of("com.github.yin.flags.example"));
+        } catch (Flags.ParseException e) {
+            System.err.println(e.getMessage());
+            Flags.printUsage("com.github.yin.flags.example");
+            System.exit(1);
+            return;
+        }
+        // TODO yin: Default value is not validated, implement required flags
+        if (input.get().isEmpty()) {
+            System.err.println("--input is empty");
+            Flags.printUsage("com.github.yin.flags.example");
+            System.exit(1);
+            return;
+        }
+        ReadmeExample re = new ReadmeExample();
+        re.run();
     }
     // ...
 }
@@ -86,19 +94,19 @@ public class ReadmeExample {
 
 ````java
 public class ProgramRunner {
-    public static main(String[] args) {
-        Flags.typeConversion().register(URL.class, new Conversion<BigDecimal>() {
-            @Override public URL apply(String s) {
-                return new URL(s);
-            }
-        });
-    }
+    static final Flag<String> input = Flags.create("")
+            .validator((String path) -> {
+                if (path == null || path.isEmpty()) {
+                    throw new Flags.ParseException("Input path is empty");
+                } else if (!Files.isRegularFile(Paths.get(path))) {
+                    throw new Flags.ParseException("Input path is not regular file");
+                } else if (!Files.isReadable(Paths.get(path))) {
+                    throw new Flags.ParseException("Input path is not readable");
+                }
+            });
 }
 ````
 
-All conversion are global, but this will change in the future and conversion will be scoped only.
-
-NOTE: This mechanism is Java 6 compatible, so lambdas won't work here, at least for now.
 
 ### Installation
 
@@ -108,7 +116,7 @@ Just grab the package from Maven Central:
 <dependency>
     <groupdId>com.github.yin.flags</groupId>
     <artifactId>java-flags</artifactId>
-    <version>0.3</version>
+    <version>0.3.0-beta1</version>
 </dependency>
 ````
 
