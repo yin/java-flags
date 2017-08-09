@@ -181,7 +181,7 @@ public class Flags {
     }
 
     /**
-     * I am so stupid, that I forgotten to change this javadoc, me fool.
+     * Indicates a problem in parsing flags. It is thrown from {#link Flags#parse()}.
      */
     public static class ParseException extends RuntimeException {
         public ParseException(String message, Throwable throwable) {
