@@ -3,3 +3,6 @@ target/
 *.iml
 *.class
 pom.xml.versionsBackup
+.classpath
+.project
+.settings/
