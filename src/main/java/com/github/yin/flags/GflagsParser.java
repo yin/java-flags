@@ -3,6 +3,8 @@ package com.github.yin.flags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,6 +14,7 @@ import java.util.List;
  * Parses command-line arguments under rules defined by:
  * https://gflags.github.io/gflags/
  */
+//TODO yin: Make this modular, refactor out a layered Acceptor schema 
 class GflagsParser implements Parser<String[]> {
     private static final Logger log = LoggerFactory.getLogger(GflagsParser.class);
     private final List<String> arguments = new ArrayList<String>();
@@ -145,5 +148,10 @@ class GflagsParser implements Parser<String[]> {
 
     protected void errorFlagHasNoValue() {
         log.error("Option {} has no value", lastMeta);
+    }
+    
+    @VisibleForTesting
+    void setState(AcceptorState state) {
+    	this.state = state;
     }
 }

@@ -9,7 +9,7 @@ import java.util.Map;
  * and allows for easy access by any FlagID attribute.
  * @author yin
  */
-public final class FlagIndex<T> {
+public class FlagIndex<T> {
     private final Multimap<String, T> byName = HashMultimap.create();
     private final Multimap<String, T> byClass = HashMultimap.create();
     private final Map<String, T> byFQN = Maps.newTreeMap();
