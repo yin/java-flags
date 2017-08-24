@@ -52,12 +52,12 @@ class GflagsParser implements Parser<String[]> {
     }
 
     protected void flag(String flag, String orig) {
-        int i = flag.indexOf('=');
-        if (i == -1) {
+    	String[] tokens = flag.split("=", 2);
+    	if (tokens.length == 1) {
             key(flag, orig);
         } else {
-            String key = flag.substring(0, i);
-            String value = flag.substring(i + 1, flag.length() - i - 1);
+            String key = tokens[0];
+            String value = tokens[1];
             keyAndValue(key, value, orig);
         }
     }
