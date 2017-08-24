@@ -15,7 +15,7 @@ mvn clean deploy -P release
 mvn nexus-staging:release
 git commit -am "Release $1"
 git tag "v$1" -m "Release $1"
-git push "v$1"
+git push origin "v$1"
 
 echo -e "<dependency>"
 echo -e "\t<groupId>com.github.yin.flags</groupId>"

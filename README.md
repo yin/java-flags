@@ -76,13 +76,6 @@ public class ReadmeExample {
             System.exit(1);
             return;
         }
-        // TODO yin: Default value is not validated, implement required flags
-        if (input.get().isEmpty()) {
-            System.err.println("--input is empty");
-            Flags.printUsage("com.github.yin.flags.example");
-            System.exit(1);
-            return;
-        }
         ReadmeExample re = new ReadmeExample();
         re.run();
     }
@@ -98,10 +91,6 @@ public class ProgramRunner {
             .validator((String path) -> {
                 if (path == null || path.isEmpty()) {
                     throw new Flags.ParseException("Input path is empty");
-                } else if (!Files.isRegularFile(Paths.get(path))) {
-                    throw new Flags.ParseException("Input path is not regular file");
-                } else if (!Files.isReadable(Paths.get(path))) {
-                    throw new Flags.ParseException("Input path is not readable");
                 }
             });
 }
